@@ -809,7 +809,11 @@ function drawFact(t){
 
 // ── QUIZ SCREEN ───────────────────────────────────────────────
 function drawQuiz(t){
-  const z=ZONES[GS.zIdx], q=z.questions[GS.qIdx];
+  const z=ZONES[GS.zIdx];
+  // clamp: on the last question, phase 'done' briefly pushes qIdx past the
+  // end while the wipe to the results screen plays — keep q valid so the
+  // (covered) final frame never reads an undefined question.
+  const q=z.questions[Math.min(GS.qIdx, z.questions.length-1)];
   bg(t,'#0a1622','#05090f',[z.color,z.accent]);
 
   // header
@@ -1134,15 +1138,20 @@ function loop(ts){
   ctx.save();
   const sx=(Math.random()*2-1)*SHAKE.mag, sy=(Math.random()*2-1)*SHAKE.mag;
   ctx.translate(sx,sy);
-  switch(GS.screen){
-    case 'intro':    drawIntro(ts);    break;
-    case 'map':      drawMap(ts);      break;
-    case 'fact':     drawFact(ts);     break;
-    case 'quiz':     drawQuiz(ts);     break;
-    case 'zresult':  drawZResult(ts);  break;
-    case 'gameover': drawGameover(ts); break;
+  try {
+    switch(GS.screen){
+      case 'intro':    drawIntro(ts);    break;
+      case 'map':      drawMap(ts);      break;
+      case 'fact':     drawFact(ts);     break;
+      case 'quiz':     drawQuiz(ts);     break;
+      case 'zresult':  drawZResult(ts);  break;
+      case 'gameover': drawGameover(ts); break;
+    }
+    drawConfetti(dt); drawPopups(dt); drawRipples(dt);
+  } catch(err){
+    // never let one bad frame kill the rAF loop — log once, keep running
+    if(!loop._warned){ console.error('render error:',err); loop._warned=true; }
   }
-  drawConfetti(dt); drawPopups(dt); drawRipples(dt);
   ctx.restore();
 
   // stable overlays (unshaken)
