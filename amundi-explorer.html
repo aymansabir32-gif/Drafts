@@ -522,6 +522,173 @@ function drawTicker(t,color){
   ctx.restore();
 }
 
+// ── Imagery: real-photo drop-in + illustrated fallback scenes ─
+// Want the REAL Amundi photos? Drop a URL or local path per key below
+// (e.g. global:'assets/partners.jpg'); leave null to use the built-in
+// illustrated scene. Real images render with the same Ken-Burns motion.
+const MEDIA = { hero:null, hq:null, mp:null, inv:null, strat:null, global:null };
+const IMG = {
+  cache:{},
+  get(key){
+    const url=MEDIA[key];
+    if(!url || typeof Image==='undefined') return null;
+    let e=this.cache[key];
+    if(!e){ e={img:new Image(),ok:false}; e.img.onload=()=>e.ok=true; e.img.onerror=()=>e.ok=false; e.img.src=url; this.cache[key]=e; }
+    return e.ok ? e.img : null;
+  }
+};
+function coverImage(img,x,y,w,h,t){               // cover-fit + slow Ken Burns
+  const ar=img.width/img.height, tar=w/h, z=1.06+0.04*Math.sin(t/6000);
+  let dw,dh; if(ar>tar){ dh=h*z; dw=dh*ar; } else { dw=w*z; dh=dw/ar; }
+  ctx.drawImage(img, x+(w-dw)/2+Math.sin(t/8000)*w*0.02, y+(h-dh)/2+Math.cos(t/9000)*h*0.02, dw, dh);
+}
+function drawZoneMedia(z,x,y,w,h,r,t,o={}){
+  ctx.save();
+  rr(x,y,w,h,r); ctx.clip();
+  const img=IMG.get(z.id);
+  if(img) coverImage(img,x,y,w,h,t);
+  else (SCENE[z.id]||sceneSkyline)(x,y,w,h,t);
+  if(o.tint){ ctx.fillStyle=hexA(z.color,o.tint); ctx.fillRect(x,y,w,h); }
+  if(o.scrim!==false){
+    const g=ctx.createLinearGradient(0,y,0,y+h);
+    g.addColorStop(0,`rgba(4,10,18,${o.top??0.06})`);
+    g.addColorStop(1,`rgba(4,10,18,${o.bot??0.78})`);
+    ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  }
+  ctx.restore();
+}
+
+// 1) HQ + Paris skyline with the Eiffel Tower (image 1)
+function sceneSkyline(x,y,w,h,t){
+  const g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#9cc3e6'); g.addColorStop(0.6,'#cfe2f2'); g.addColorStop(1,'#a8c4dc');
+  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  for(let i=0;i<3;i++){ const cx=x+((t/9000+i*0.4)%1.3-0.2)*w, cy=y+h*(0.16+i*0.09);
+    ctx.beginPath(); ctx.ellipse(cx,cy,w*0.13,h*0.045,0,0,6.28); ctx.fill(); }
+  const base=y+h*0.82;
+  ctx.fillStyle='#7e93a8';
+  for(let i=0;i<14;i++){ const bw=w*0.062, bx=x+i*bw, bh=h*(0.10+0.18*Math.abs(Math.sin(i*1.7)));
+    ctx.fillRect(bx,base-bh,bw*0.92,bh); }
+  ctx.fillStyle='#5b6f84'; ctx.fillRect(x,base,w,(y+h)-base);
+  // Eiffel Tower
+  const ex=x+w*0.17, eb=base, eh=h*0.44, ew=w*0.1;
+  ctx.strokeStyle='#3d5269'; ctx.lineWidth=Math.max(1,h*0.006);
+  ctx.beginPath();
+  ctx.moveTo(ex-ew/2,eb); ctx.lineTo(ex,eb-eh); ctx.lineTo(ex+ew/2,eb);
+  ctx.moveTo(ex-ew*0.34,eb-eh*0.42); ctx.lineTo(ex+ew*0.34,eb-eh*0.42);
+  ctx.moveTo(ex-ew*0.18,eb-eh*0.7); ctx.lineTo(ex+ew*0.18,eb-eh*0.7);
+  ctx.stroke();
+  // glass HQ tower
+  const tx=x+w*0.6, tw=w*0.33, th=h*0.62, tb=base;
+  const tg=ctx.createLinearGradient(tx,tb-th,tx+tw,tb);
+  tg.addColorStop(0,'#356f86'); tg.addColorStop(1,'#173a4d');
+  ctx.fillStyle=tg; ctx.fillRect(tx,tb-th,tw,th);
+  for(let r=0;r<9;r++)for(let c=0;c<6;c++){
+    ctx.fillStyle=((r*7+c*3)%5===0)?'rgba(224,242,250,0.8)':'rgba(150,195,215,0.4)';
+    ctx.fillRect(tx+w*0.012+c*(tw/6), tb-th+h*0.02+r*(th/9), tw/6-w*0.01, th/9-h*0.012);
+  }
+  ctx.fillStyle='#0a2a3a'; ctx.fillRect(tx,tb-th,tw,h*0.055);
+  ctx.fillStyle='#eaf6ff'; ctx.font=`bold ${Math.round(h*0.045)}px sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Amundi', tx+tw/2, tb-th+h*0.028);
+}
+// 2) World Investment Forum stage (image 2)
+function sceneForum(x,y,w,h,t,quiet){
+  const g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#0a2a5a'); g.addColorStop(1,'#03102a');
+  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<3;i++){ const sx=x+w*(0.3+i*0.2);
+    const lg=ctx.createLinearGradient(sx,y,sx,y+h*0.7);
+    lg.addColorStop(0,'rgba(120,180,255,0.18)'); lg.addColorStop(1,'rgba(120,180,255,0)');
+    ctx.fillStyle=lg; ctx.beginPath(); ctx.moveTo(sx,y);
+    ctx.lineTo(sx-w*0.08,y+h*0.7); ctx.lineTo(sx+w*0.08,y+h*0.7); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+  const cx=x+w/2, cy=y+h*0.42, rad=h*0.3;
+  const rg=ctx.createRadialGradient(cx,cy,rad*0.2,cx,cy,rad);
+  rg.addColorStop(0,'#2f6fd0'); rg.addColorStop(1,'#0d3a8a');
+  ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(cx,cy,rad,0,6.28); ctx.fill();
+  ctx.fillStyle='rgba(20,60,130,0.7)';
+  ctx.fillRect(x+w*0.04,cy-h*0.16,w*0.17,h*0.24); ctx.fillRect(x+w*0.79,cy-h*0.16,w*0.17,h*0.24);
+  if(!quiet){
+    ctx.fillStyle='#eaf3ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`bold ${Math.round(h*0.07)}px sans-serif`; ctx.fillText('Amundi',cx,cy-h*0.03);
+    ctx.font=`${Math.round(h*0.028)}px sans-serif`; ctx.fillText('WORLD INVESTMENT FORUM',cx,cy+h*0.05);
+  }
+  ctx.fillStyle='#0b1f44'; ctx.beginPath(); ctx.ellipse(cx,y+h*0.78,w*0.4,h*0.1,0,0,6.28); ctx.fill();
+  ctx.fillStyle='#02060f';
+  const heads=Math.max(8,Math.floor(w/(h*0.07)));
+  for(let i=0;i<heads;i++){ const hx=x+(i+0.5)*(w/heads), hh=h*0.05+(i%3)*h*0.012, hy=y+h-hh*0.1;
+    ctx.beginPath(); ctx.arc(hx,hy,hh*0.5,0,6.28); ctx.fill();
+    ctx.fillRect(hx-hh*0.5,hy,hh,hh); }
+}
+// 3) Executive portrait (image 3) — generic, no real likeness
+function scenePortrait(x,y,w,h,t){
+  const g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#173a63'); g.addColorStop(1,'#0a1f3a');
+  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  ctx.save(); ctx.globalAlpha=0.22;
+  for(let i=0;i<5;i++){ ctx.fillStyle=i%2?'#2a5a8a':'#3f7fb0'; ctx.fillRect(x+w*0.52,y+h*(0.08+i*0.17),w*0.5,h*0.09); }
+  ctx.restore();
+  const cx=x+w*0.42;
+  ctx.fillStyle='#1b2a3c';
+  ctx.beginPath(); ctx.moveTo(cx-w*0.27,y+h);
+  ctx.quadraticCurveTo(cx-w*0.25,y+h*0.6,cx,y+h*0.6);
+  ctx.quadraticCurveTo(cx+w*0.25,y+h*0.6,cx+w*0.27,y+h); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#e8eef5'; ctx.beginPath();
+  ctx.moveTo(cx-w*0.06,y+h*0.64); ctx.lineTo(cx,y+h); ctx.lineTo(cx+w*0.06,y+h*0.64); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#2f6fd0'; ctx.beginPath();
+  ctx.moveTo(cx-w*0.02,y+h*0.64); ctx.lineTo(cx,y+h*0.95); ctx.lineTo(cx+w*0.02,y+h*0.64); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#e3bd9a'; ctx.fillRect(cx-w*0.045,y+h*0.48,w*0.09,h*0.18);
+  ctx.beginPath(); ctx.arc(cx,y+h*0.38,h*0.14,0,6.28); ctx.fill();
+  ctx.fillStyle='#3a2c22'; ctx.beginPath(); ctx.arc(cx,y+h*0.35,h*0.145,Math.PI*1.04,Math.PI*1.96); ctx.fill();
+}
+// 4) "2028 Strategic Plan — Invest for the future" cube graphic (image 4)
+function isoCube(cx,cy,s,top,left,right){
+  ctx.beginPath(); ctx.moveTo(cx,cy-s); ctx.lineTo(cx+s,cy-s*0.5); ctx.lineTo(cx,cy); ctx.lineTo(cx-s,cy-s*0.5); ctx.closePath(); ctx.fillStyle=top; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx-s,cy-s*0.5); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+s); ctx.lineTo(cx-s,cy+s*0.5); ctx.closePath(); ctx.fillStyle=left; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx+s,cy-s*0.5); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+s); ctx.lineTo(cx+s,cy+s*0.5); ctx.closePath(); ctx.fillStyle=right; ctx.fill();
+}
+function sceneCube(x,y,w,h,t){
+  const g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#13386e'); g.addColorStop(1,'#0a1f44');
+  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  const cubes=[[0.66,0.22,0.06],[0.78,0.34,0.05],[0.7,0.52,0.07],[0.87,0.5,0.05],[0.75,0.72,0.05],[0.9,0.26,0.04],[0.83,0.68,0.06]];
+  cubes.forEach((c,i)=>isoCube(x+w*c[0], y+h*c[1]+Math.sin(t/1000+i)*h*0.012, Math.min(w,h)*c[2], '#2f5f9e','#244c80','#1b3a64'));
+  isoCube(x+w*0.27, y+h*0.5, Math.min(w,h)*0.2, '#5b9bd5','#3f7fb0','#2e6090');
+  ctx.fillStyle='#eaf3ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`bold ${Math.round(h*0.075)}px sans-serif`; ctx.fillText('2028',x+w*0.27,y+h*0.47);
+  ctx.font=`${Math.round(h*0.03)}px sans-serif`; ctx.fillText('Strategic Plan',x+w*0.27,y+h*0.56);
+}
+// 5) Subsidiary / partner logo wall (image 5)
+function scenePartners(x,y,w,h,t){
+  const g=ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#06403a'); g.addColorStop(1,'#02211f');
+  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='rgba(128,222,234,0.12)';
+  for(let i=0;i<60;i++){ ctx.beginPath(); ctx.arc(x+((i*53)%100)/100*w, y+((i*29)%100)/100*h, Math.max(1,h*0.004),0,6.28); ctx.fill(); }
+  const names=[['Fund Channel','#1f6fb2'],['Victory Capital','#0a3d62'],['SG Gestion','#e2231a'],
+    ['KBI GI','#1f9e8f'],['ABC-CA','#2e8b57'],['Amundi α','#0a4d8c'],
+    ['CPR AM','#29b6f6'],['NH-Amundi','#f4a31c'],['Sabadell','#1a3e6e']];
+  const cols=3, rows=3, pad=w*0.035, cw=(w-pad*(cols+1))/cols, ch=(h-pad*(rows+1))/rows;
+  names.forEach((nm,i)=>{
+    const c=i%cols, r=Math.floor(i/cols), bx=x+pad+c*(cw+pad), by=y+pad+r*(ch+pad);
+    rr(bx,by,cw,ch,Math.min(cw,ch)*0.16); ctx.fillStyle='rgba(255,255,255,0.93)'; ctx.fill();
+    ctx.fillStyle=nm[1]; ctx.textAlign='center'; ctx.textBaseline='middle';
+    let fs=ch*0.36; ctx.font=`bold ${Math.round(fs)}px sans-serif`;
+    let guard=0; while(ctx.measureText(nm[0]).width>cw*0.86 && fs>6 && guard++<40){ fs-=1; ctx.font=`bold ${Math.round(fs)}px sans-serif`; }
+    ctx.fillText(nm[0],bx+cw/2,by+ch/2);
+  });
+}
+const SCENE = {
+  hq:sceneSkyline,
+  mp:scenePortrait,
+  inv:(x,y,w,h,t)=>sceneForum(x,y,w,h,t,false),
+  strat:sceneCube,
+  global:scenePartners
+};
+
 // ── Screen-wipe transition system ────────────────────────────
 const TR={ active:false, t:0, dur:560, half:false, next:null, color:'#00ACC1', cb:null };
 function goto(screen,o={}){
@@ -723,7 +890,14 @@ function drawMute(){
 function drawIntro(t){
   const age=t-GS.screenT0;
   bg(t,'#0b1a2e','#05080f',['#00ACC1','#3949AB']);
-  drawGrid(t,'#00E5FF'); drawParticles(t); drawTicker(t,'#00E5FF');
+  drawGrid(t,'#00E5FF');
+  // dim forum backdrop — audience + stage glow for a human, "event" feel
+  ctx.save(); ctx.globalAlpha=0.16;
+  const heroImg=IMG.get('hero');
+  if(heroImg){ rr(0,0,W(),H(),0); ctx.save(); ctx.clip(); coverImage(heroImg,0,0,W(),H(),t); ctx.restore(); }
+  else sceneForum(0,0,W(),H(),t,true);
+  ctx.restore();
+  drawParticles(t); drawTicker(t,'#00E5FF');
 
   withEntry(age,0,600,()=>{
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -824,29 +998,29 @@ function drawMap(t){
       ctx.save();
       const lift=k*u(0.012), cxp=cx+cW/2, cyp=cy+cH/2, sc=1+0.025*k;
       ctx.translate(cxp,cyp-lift); ctx.scale(sc,sc); ctx.translate(-cxp,-cyp);
-      rr(cx,cy,cW,cH,u(0.016));
-      if(isDone){ ctx.fillStyle='#0c1820'; }
-      else {
-        const g=ctx.createLinearGradient(cx,cy,cx,cy+cH);
-        g.addColorStop(0,hexA(z.color,0.88)); g.addColorStop(1,hexA(z.color,0.5));
-        ctx.fillStyle=g; ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.02)+u(0.04)*k; ctx.shadowOffsetY=u(0.008);
-      }
-      ctx.fill(); ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+      // hover glow base
+      if(!isDone){ ctx.save(); rr(cx,cy,cW,cH,u(0.016));
+        ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.02)+u(0.04)*k; ctx.shadowOffsetY=u(0.008);
+        ctx.fillStyle=z.color; ctx.fill(); ctx.restore(); }
+      // per-zone photo / illustrated scene as the card background
+      drawZoneMedia(z,cx,cy,cW,cH,u(0.016),t,{tint:isDone?0.6:0.24,top:0.06,bot:0.9});
       rr(cx,cy,cW,cH,u(0.016));
       ctx.strokeStyle=(z.featured&&!isDone)?z.accent:hexA('#ffffff',isDone?0.06:0.14+0.2*k);
       ctx.lineWidth=(z.featured&&!isDone)?3:1.5; ctx.stroke();
-      // emoji (gentle bob)
-      ctx.globalAlpha*=isDone?0.4:1;
+      // labels — dark shadow keeps them legible over imagery
+      ctx.save(); ctx.shadowColor='rgba(0,0,0,0.75)'; ctx.shadowBlur=u(0.012); ctx.shadowOffsetY=u(0.002);
+      ctx.globalAlpha*=isDone?0.5:1;
       const ebob=isDone?0:Math.sin(t/600+i)*u(0.004)*(0.5+k);
-      ctx.font=`${u(0.072)}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(z.emoji,cx+cW/2,cy+cH*0.27+ebob);
+      ctx.font=`${u(0.058)}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(z.emoji,cx+cW/2,cy+cH*0.24+ebob);
       ctx.font=`bold ${u(0.034)}px sans-serif`; ctx.fillStyle='#fff';
-      ctx.fillText(z.name,cx+cW/2,cy+cH*0.52);
-      ctx.font=`${u(0.022)}px sans-serif`; ctx.fillStyle=isDone?'#455A64':z.accent;
-      ctx.fillText(z.desc,cx+cW/2,cy+cH*0.65);
-      ctx.font=`${u(0.022)}px sans-serif`;
-      if(isDone){ ctx.fillStyle='#4CAF50'; ctx.fillText(`✓  ${GS.zoneScore[z.id]||0} pts`,cx+cW/2,cy+cH*0.80); }
-      else { ctx.fillStyle='#B0BEC5'; ctx.fillText(`${z.questions.length} questions`,cx+cW/2,cy+cH*0.80); }
+      ctx.fillText(z.name,cx+cW/2,cy+cH*0.55);
+      ctx.font=`${u(0.022)}px sans-serif`; ctx.fillStyle=isDone?'#90A4AE':z.accent;
+      ctx.fillText(z.desc,cx+cW/2,cy+cH*0.67);
+      ctx.font=`bold ${u(0.022)}px sans-serif`;
+      if(isDone){ ctx.fillStyle='#69F0AE'; ctx.fillText(`✓  ${GS.zoneScore[z.id]||0} pts`,cx+cW/2,cy+cH*0.81); }
+      else { ctx.fillStyle='#ECEFF1'; ctx.fillText(`${z.questions.length} questions`,cx+cW/2,cy+cH*0.81); }
+      ctx.restore();
       if(!isDone && k>0.05){
         ctx.globalAlpha*=k; ctx.fillStyle=z.accent; ctx.font=`bold ${u(0.02)}px sans-serif`;
         ctx.fillText('▶ ENTER',cx+cW/2,cy+cH*0.92);
@@ -888,20 +1062,32 @@ function drawFact(t){
     ctx.fillText(`Fact ${GS.factIdx+1}/${z.facts.length}`,W()-u(0.025),barH/2);
   });
 
-  // fact card
-  const padX=u(0.05), cY=H()*0.185, cW=W()-padX*2, cH=H()*0.52;
-  ctx.save(); ctx.globalAlpha*=fadeIn(age,120,450);
-  glassCard(padX,cY,cW,cH,u(0.018),{border:hexA(z.accent,0.4),shadow:hexA(z.accent,0.35)});
+  const padX=u(0.05), cW=W()-padX*2;
+  // hero image band — per-zone photo / illustrated scene
+  const hY=H()*0.15, hH=H()*0.3;
+  ctx.save(); ctx.globalAlpha*=fadeIn(age,80,450);
+  drawZoneMedia(z,padX,hY,cW,hH,u(0.018),t,{tint:0.12,top:0.04,bot:0.62});
+  rr(padX,hY,cW,hH,u(0.018)); ctx.strokeStyle=hexA(z.accent,0.45); ctx.lineWidth=1.5; ctx.stroke();
+  ctx.font=`bold ${u(0.026)}px sans-serif`; ctx.fillStyle='#fff';
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=u(0.012);
+  ctx.fillText(z.emoji+'   '+z.desc, padX+u(0.025), hY+hH-u(0.028));
+  ctx.restore();
+
+  // fact text card
+  const cY=H()*0.475, cH=H()*0.25;
+  ctx.save(); ctx.globalAlpha*=fadeIn(age,160,450);
+  glassCard(padX,cY,cW,cH,u(0.018),{border:hexA(z.accent,0.4),shadow:hexA(z.accent,0.3)});
   ctx.restore();
 
   // animated fact content (slides in on change)
   const fAge=t-GS.factAnimT0, fa=ease.outCubic(clamp(fAge/360,0,1));
-  ctx.save(); ctx.globalAlpha*=fa*fadeIn(age,120,450); ctx.translate((1-fa)*u(0.06),0);
-  ctx.font=`${u(0.07)}px sans-serif`; ctx.fillStyle='#fff';
+  ctx.save(); ctx.globalAlpha*=fa*fadeIn(age,160,450); ctx.translate((1-fa)*u(0.06),0);
+  ctx.font=`${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
   ctx.textAlign='center'; ctx.textBaseline='top';
-  ctx.fillText('💡',W()/2,cY+u(0.025));
-  ctx.font=`${u(0.035)}px sans-serif`; ctx.fillStyle='#CFD8DC';
-  drawCentered(z.facts[GS.factIdx],W()/2,cY+u(0.145),cW-u(0.08),u(0.052));
+  ctx.fillText('💡',W()/2,cY+u(0.022));
+  ctx.font=`${u(0.032)}px sans-serif`; ctx.fillStyle='#CFD8DC';
+  drawCentered(z.facts[GS.factIdx],W()/2,cY+u(0.085),cW-u(0.08),u(0.046));
   ctx.restore();
 
   // progress dots (active pulses)
