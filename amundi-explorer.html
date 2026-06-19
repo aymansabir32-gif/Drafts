@@ -132,6 +132,8 @@ const SFX = {
   wrong(){ this.tone(196,{type:'sawtooth',dur:0.28,vol:0.18,glide:98});
            this.tone(146,{type:'square',dur:0.30,vol:0.07,glide:73,when:0.02}); },
   tick(){  this.tone(1100,{type:'square',dur:0.03,vol:0.05}); },
+  coin(){  this.tone(1318.5,{type:'sine',dur:0.06,vol:0.12});
+           this.tone(1975.5,{type:'sine',dur:0.10,vol:0.10,when:0.05,delay:0.3}); },
   zoneComplete(){ [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>
                     this.tone(f,{type:'triangle',dur:0.16,vol:0.20,when:i*0.09,delay:0.4})); },
   victory(){
@@ -400,6 +402,126 @@ function drawRipples(dt){
   }
 }
 
+// ── Game-inspired FX: coins · shockwaves · embers · flash · punch ─
+const COINS=[], SHOK=[], EMB=[];
+const FLASH={a:0,col:'#ffffff'};
+let PUNCH=0, scorePulse=0;
+function flash(col,a){ FLASH.col=col; FLASH.a=Math.max(FLASH.a,a); }
+function punch(v){ PUNCH=Math.min(1,Math.max(PUNCH,v)); }                 // camera kick
+function shock(x,y,col,maxR){ SHOK.push({x,y,t:0,life:480,col,maxR:maxR||u(0.18)}); }
+// Mario/mobile-style coins that arc toward the score counter
+function spawnCoins(x,y,n){
+  const tx=W()/2, ty=u(0.05);
+  for(let i=0;i<n;i++) COINS.push({
+    sx:x+(Math.random()-0.5)*u(0.07), sy:y+(Math.random()-0.5)*u(0.04),
+    x, y, tx, ty, t:0, delay:i*38+Math.random()*60, life:560+Math.random()*200,
+    arc:u(0.05)+Math.random()*u(0.09), spin:Math.random()*6.28, done:false });
+}
+function ember(x,y){ EMB.push({ x,y, vx:(Math.random()-0.5)*H()*0.0002,
+  vy:-H()*0.0006-Math.random()*H()*0.0005, t:0, life:600+Math.random()*350,
+  r:u(0.004)+Math.random()*u(0.004), col:Math.random()<0.5?'#FF9800':'#FFC107' }); }
+
+function drawShocks(dt){
+  for(let i=SHOK.length-1;i>=0;i--){
+    const s=SHOK[i]; s.t+=dt; const p=s.t/s.life;
+    if(p>=1){ SHOK.splice(i,1); continue; }
+    const r=ease.outCubic(p)*s.maxR;
+    ctx.save(); ctx.globalAlpha=(1-p)*0.85; ctx.strokeStyle=s.col;
+    ctx.lineWidth=u(0.007)*(1-p)+1; ctx.shadowColor=s.col; ctx.shadowBlur=u(0.02);
+    ctx.beginPath(); ctx.arc(s.x,s.y,r,0,6.2832); ctx.stroke(); ctx.restore();
+  }
+}
+function drawCoins(dt){
+  for(let i=COINS.length-1;i>=0;i--){
+    const c=COINS[i]; c.t+=dt;
+    const p=clamp((c.t-c.delay)/c.life,0,1), e=ease.inOutCubic(p);
+    c.x=lerp(c.sx,c.tx,e); c.y=lerp(c.sy,c.ty,e)-Math.sin(p*Math.PI)*c.arc;
+    if(p>=1){ scorePulse=1; SFX.coin(); flash('#FFE082',0.05); COINS.splice(i,1); continue; }
+    const sp=c.t*0.018+c.spin, sxw=Math.abs(Math.cos(sp))*0.78+0.22, R=u(0.017);
+    ctx.save(); ctx.translate(c.x,c.y); ctx.scale(sxw,1);
+    const rg=ctx.createRadialGradient(-R*0.3,-R*0.3,R*0.1,0,0,R);
+    rg.addColorStop(0,'#FFF3C4'); rg.addColorStop(0.5,'#FFC107'); rg.addColorStop(1,'#FF8F00');
+    ctx.fillStyle=rg; ctx.shadowColor='#FFC107'; ctx.shadowBlur=u(0.018);
+    ctx.beginPath(); ctx.arc(0,0,R,0,6.2832); ctx.fill();
+    ctx.shadowBlur=0; ctx.strokeStyle='#FFE082'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.arc(0,0,R*0.58,0,6.2832); ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawEmbers(dt){
+  for(let i=EMB.length-1;i>=0;i--){
+    const e=EMB[i]; e.t+=dt; e.x+=e.vx*dt; e.y+=e.vy*dt;
+    if(e.t>e.life){ EMB.splice(i,1); continue; }
+    ctx.save(); ctx.globalAlpha=1-e.t/e.life; ctx.fillStyle=e.col;
+    ctx.shadowColor=e.col; ctx.shadowBlur=u(0.015);
+    ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,6.2832); ctx.fill(); ctx.restore();
+  }
+}
+function drawFlash(){
+  if(FLASH.a<=0.003) return;
+  ctx.save(); ctx.globalAlpha=FLASH.a; ctx.fillStyle=FLASH.col; ctx.fillRect(0,0,W(),H()); ctx.restore();
+}
+
+// ── Synthwave perspective grid (Tron / Geometry Dash vibe) ───
+function drawGrid(t,color,hy){
+  hy=hy||H()*0.60;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  ctx.shadowColor=color; ctx.shadowBlur=u(0.012);
+  ctx.strokeStyle=hexA(color,0.38); ctx.lineWidth=1.1;
+  const vx=W()/2, spread=W()*1.35, N=12;
+  for(let i=-N;i<=N;i++){                         // vertical lines fanning out
+    const xb=vx+(i/N)*spread;
+    ctx.beginPath(); ctx.moveTo(vx,hy); ctx.lineTo(xb,H()); ctx.stroke();
+  }
+  const speed=(t/1100)%1;
+  for(let k=0;k<16;k++){                            // receding horizontals (scrolling)
+    let f=(k+speed)/16; f=f*f;
+    const y=hy+f*(H()-hy);
+    ctx.globalAlpha=clamp(f*1.7,0,1)*0.4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W(),y); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  const sg=ctx.createRadialGradient(vx,hy,0,vx,hy,W()*0.42);  // horizon sun glow
+  sg.addColorStop(0,hexA(color,0.16)); sg.addColorStop(1,hexA(color,0));
+  ctx.fillStyle=sg; ctx.fillRect(0,hy-W()*0.42,W(),W()*0.84);
+  ctx.restore();
+}
+
+// ── Rotating god rays (victory flourish) ─────────────────────
+function drawRays(t,cx,cy,color,count,maxR){
+  count=count||12; maxR=maxR||H()*0.5;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  ctx.translate(cx,cy); ctx.rotate(t/5000);
+  for(let i=0;i<count;i++){
+    ctx.rotate(Math.PI*2/count);
+    const g=ctx.createLinearGradient(0,0,0,-maxR);
+    g.addColorStop(0,hexA(color,0.15)); g.addColorStop(1,hexA(color,0));
+    ctx.fillStyle=g;
+    const w=maxR*0.06*(0.6+0.4*Math.sin(t/600+i));
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-w,-maxR); ctx.lineTo(w,-maxR); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── Thematic scrolling stock-ticker tape (terminal twist) ────
+const TICKER=[' AMUN ▲ +2.4% ',' AUM €2,398B ',' #1 IN EUROPE ',' NET INFLOWS €88B ▲ ',
+  ' ADJ. NET INCOME +15% ▲ ',' 200M+ CLIENTS ',' 35+ COUNTRIES ',' 6 PLATFORMS ',
+  ' INVEST FOR THE FUTURE 2025–2028 '];
+function drawTicker(t,color){
+  const bh=u(0.038), by=H()-bh;
+  ctx.save();
+  ctx.fillStyle='rgba(4,10,18,0.72)'; ctx.fillRect(0,by,W(),bh);
+  ctx.strokeStyle=hexA(color,0.4); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,by); ctx.lineTo(W(),by); ctx.stroke();
+  ctx.font=`bold ${u(0.02)}px monospace`; ctx.textBaseline='middle'; ctx.textAlign='left';
+  ctx.fillStyle=color;
+  const str=TICKER.join('   ◆   ')+'   ◆   ';
+  const w=ctx.measureText(str).width, x=-((t/24)%w);
+  ctx.fillText(str,x,by+bh/2); ctx.fillText(str,x+w,by+bh/2);
+  ctx.restore();
+}
+
 // ── Screen-wipe transition system ────────────────────────────
 const TR={ active:false, t:0, dur:560, half:false, next:null, color:'#00ACC1', cb:null };
 function goto(screen,o={}){
@@ -600,7 +722,8 @@ function drawMute(){
 // ── INTRO SCREEN ──────────────────────────────────────────────
 function drawIntro(t){
   const age=t-GS.screenT0;
-  bg(t,'#0b1a2e','#05080f',['#00ACC1','#3949AB']); drawParticles(t);
+  bg(t,'#0b1a2e','#05080f',['#00ACC1','#3949AB']);
+  drawGrid(t,'#00E5FF'); drawParticles(t); drawTicker(t,'#00E5FF');
 
   withEntry(age,0,600,()=>{
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -671,7 +794,8 @@ function drawIntro(t){
 // ── MAP SCREEN ────────────────────────────────────────────────
 function drawMap(t){
   const age=t-GS.screenT0;
-  bg(t,'#0b1a2c','#05090f',['#00ACC1','#1E88E5']); drawParticles(t);
+  bg(t,'#0b1a2c','#05090f',['#00ACC1','#1E88E5']);
+  drawGrid(t,'#29B6F6'); drawParticles(t); drawTicker(t,'#29B6F6');
 
   withEntry(age,0,500,()=>{
     ctx.font=`bold ${u(0.05)}px sans-serif`; ctx.fillStyle='#E0F7FA';
@@ -826,12 +950,25 @@ function drawQuiz(t){
   ctx.fillText(z.emoji+'  '+z.name,u(0.025),barH/2);
   ctx.fillStyle=z.accent; ctx.textAlign='right';
   ctx.fillText(`Q ${GS.qIdx+1}/${z.questions.length}`,W()-u(0.025),barH/2);
-  // score + streak
-  ctx.textAlign='center'; ctx.fillStyle='#FFB300';
+  // score (bumps when coins land) + combo
+  ctx.save();
+  const spz=1+0.4*scorePulse;
+  ctx.font=`bold ${u(0.034*spz)}px sans-serif`;
+  ctx.fillStyle=scorePulse>0.05?'#FFE082':'#FFB300';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  if(scorePulse>0.05){ ctx.shadowColor='#FFC107'; ctx.shadowBlur=u(0.03*scorePulse); }
   ctx.fillText(`⭐ ${GS.totalScore+GS.zonePoints}`,W()/2,barH/2);
+  ctx.restore();
   if(GS.streak>=2){
-    ctx.font=`bold ${u(0.024)}px sans-serif`; ctx.fillStyle='#FF8A65';
-    ctx.fillText(`🔥 ${GS.streak} streak`,W()/2,barH*0.84);
+    const fire=GS.streak>=3;
+    ctx.save();
+    ctx.font=`bold ${u(fire?0.028:0.024)}px sans-serif`;
+    ctx.fillStyle=fire?'#FF7043':'#FF8A65';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(fire){ ctx.shadowColor='#FF5722'; ctx.shadowBlur=u(0.022*(0.6+0.4*Math.sin(t/120))); }
+    ctx.fillText(`🔥 ${GS.streak}${fire?' ON FIRE!':' STREAK'}`,W()/2,barH*0.84);
+    ctx.restore();
+    if(fire && Math.random()<0.5) ember(W()/2+(Math.random()-0.5)*u(0.24),barH*0.86);
   }
 
   // animated timer bar
@@ -926,11 +1063,16 @@ function drawQuiz(t){
       if(GS.fbCorrect){
         GS.zonePoints+=100; GS.correctInZone++; GS.streak++;
         SFX.correct(GS.streak);
-        const ocx=ox+oW/2;
+        const ocx=ox+oW/2, ocy=oy+oH/2;
         confettiBurst(ocx,oy,z.accent,28);
         popup(ocx,oy,'+100','#A5D6A7');
+        spawnCoins(ocx,ocy, 8+Math.min(GS.streak,6)*2);   // coins fly to score
+        shock(ocx,ocy,z.accent,u(0.16)); flash('#CFFFE6',0.16); punch(0.55);
         if(GS.streak>=2) popup(ocx,oy-u(0.055),'🔥 x'+GS.streak,'#FFB300',u(0.034));
-      } else { GS.streak=0; SFX.wrong(); shake(u(0.011)); }
+      } else {
+        GS.streak=0; SFX.wrong(); shake(u(0.012));
+        flash('#5c0a0a',0.22); punch(0.5); shock(ox+oW/2,oy+oH/2,'#FF5252',u(0.14));
+      }
     }
   });
 
@@ -957,20 +1099,31 @@ function drawQuiz(t){
 // ── ZONE RESULT ───────────────────────────────────────────────
 function drawZResult(t){
   const z=ZONES[GS.zIdx], age=t-GS.screenT0;
-  bg(t,'#0a1622','#05090f',[z.color,z.accent]); drawParticles(t);
+  bg(t,'#0a1622','#05090f',[z.color,z.accent]);
+  drawGrid(t,z.accent); drawParticles(t);
+
+  const pct=Math.round((GS.lastZoneCorrect/z.questions.length)*100);
+  // cinematic entrance: shockwave + camera punch + flash, fired once
+  if(!GS._zr){ GS._zr=true;
+    shock(W()/2,H()*0.32,z.accent,u(0.34)); punch(0.7); flash(z.accent,0.16);
+    if(pct>=70)  confettiBurst(W()/2,H()*0.32,z.accent,46);
+    if(pct===100) confettiBurst(W()/2,H()*0.30,'#FFD54F',64);
+  }
+  if(pct>=70) drawRays(t,W()/2,H()*0.42,pct===100?'#FFD54F':z.accent,12,H()*0.55);
 
   const barH=u(0.13);
   const g=ctx.createLinearGradient(0,0,W(),0);
   g.addColorStop(0,z.color); g.addColorStop(1,hexA(z.color,0.2));
   ctx.fillStyle=g; ctx.fillRect(0,0,W(),barH);
-  ctx.save(); ctx.globalAlpha*=fadeIn(age,0,400);
-  ctx.font=`bold ${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
+  // "<ZONE> CLEARED" slam-in title (fighting-game flourish)
+  ctx.save(); ctx.globalAlpha*=fadeIn(age,0,300);
+  const hs=lerp(1.7,1,ease.outBack(clamp(age/340,0,1)));
+  ctx.translate(W()/2,barH/2); ctx.scale(hs,hs);
+  ctx.font=`900 ${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(z.emoji+'  '+z.name+'  Complete!',W()/2,barH/2);
+  ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.03);
+  ctx.fillText(z.name.toUpperCase()+'  CLEARED',0,0);
   ctx.restore();
-
-  const pct=Math.round((GS.lastZoneCorrect/z.questions.length)*100);
-  if(!GS._zr){ GS._zr=true; if(pct>=70) confettiBurst(W()/2,H()*0.32,z.accent,46); }
 
   const cX=u(0.07), cY=H()*0.19, cW=W()-u(0.14), cH=H()*0.46;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,120,450);
@@ -1025,9 +1178,11 @@ function drawZResult(t){
 // ── GAMEOVER SCREEN ───────────────────────────────────────────
 function drawGameover(t){
   const age=t-GS.screenT0;
-  bg(t,'#0a1018','#03060a',['#FFB300','#00ACC1']); drawParticles(t);
+  bg(t,'#0a1018','#03060a',['#FFB300','#00ACC1']);
+  drawGrid(t,'#FFB300'); drawParticles(t);
 
   const pct=Math.round((GS.totalScore/MAX_SCORE)*100);
+  drawRays(t,W()/2,H()*0.13,'#FFD54F',14,H()*0.62);     // victory god rays
   const by=Math.abs(Math.sin(t/500))*u(0.012);
   ctx.save(); ctx.globalAlpha*=fadeIn(age,0,500);
   ctx.font=`${u(0.1)}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1091,6 +1246,7 @@ function updateTimers(ts,dt){
     if(GS.timer<=0){
       GS.timer=0; GS.sel=-1; GS.phase='fb'; GS.fbCorrect=false; GS.fbTimer=2200; GS.fbT0=ts;
       GS.streak=0; SFX.wrong(); shake(u(0.012));
+      flash('#5c0a0a',0.22); punch(0.5); shock(W()/2,H()*0.5,'#FF5252',u(0.16));
     }
   } else if(GS.phase==='fb'){
     GS.fbTimer-=dt;
@@ -1106,6 +1262,7 @@ function updateTimers(ts,dt){
         GS.phase='done'; GS._zr=false;
         SFX.zoneComplete();
         confettiBurst(W()/2,H()*0.28,'#FFB300',40);
+        punch(0.85); flash('#FFFFFF',0.22);
         goto('zresult',{color:z.color});
       } else {
         GS.phase='q'; GS.timer=15000; GS.sel=-1; GS.qAnimT0=ts; GS.lastTickSec=99;
@@ -1124,6 +1281,7 @@ function loop(ts){
   updateTransition(ts,dt);
   updateTimers(ts,dt);
   SHAKE.mag*=Math.exp(-dt/90);
+  FLASH.a*=Math.exp(-dt/90); PUNCH*=Math.exp(-dt/70); scorePulse*=Math.exp(-dt/180);
   SFX.updateAmbient();
   if(GS.celebrate && GS.screen==='gameover'){
     GS._ct+=dt; if(GS._ct>90){ GS._ct=0; confettiRain(5); }
@@ -1138,6 +1296,8 @@ function loop(ts){
   ctx.save();
   const sx=(Math.random()*2-1)*SHAKE.mag, sy=(Math.random()*2-1)*SHAKE.mag;
   ctx.translate(sx,sy);
+  if(PUNCH>0.001){ const px=W()/2,py=H()/2,ps=1+0.03*PUNCH;   // camera punch
+                   ctx.translate(px,py); ctx.scale(ps,ps); ctx.translate(-px,-py); }
   try {
     switch(GS.screen){
       case 'intro':    drawIntro(ts);    break;
@@ -1147,7 +1307,7 @@ function loop(ts){
       case 'zresult':  drawZResult(ts);  break;
       case 'gameover': drawGameover(ts); break;
     }
-    drawConfetti(dt); drawPopups(dt); drawRipples(dt);
+    drawShocks(dt); drawConfetti(dt); drawCoins(dt); drawEmbers(dt); drawPopups(dt); drawRipples(dt);
   } catch(err){
     // never let one bad frame kill the rAF loop — log once, keep running
     if(!loop._warned){ console.error('render error:',err); loop._warned=true; }
@@ -1156,6 +1316,7 @@ function loop(ts){
 
   // stable overlays (unshaken)
   vignette();
+  drawFlash();
   drawMute();
   drawTransition();
 
