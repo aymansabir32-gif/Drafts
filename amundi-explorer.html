@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>Amundi Explorer</title>
+<title>Amundi Explorateur</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { background:#04080f; display:flex; align-items:center; justify-content:center;
@@ -108,6 +108,14 @@ function drawEmoji(e,x,y,fs,baseline){
   const img=EMO.img(e);
   if(img) ctx.drawImage(img, x-off, top, s, s);
   else { const pa=ctx.textAlign; ctx.textAlign='left'; ctx['fillText'](e,x,y); ctx.textAlign=pa; }
+}
+// width of a possibly-emoji string in the current font
+function measureEtext(str){
+  str=''+str;
+  if(!containsEmoji(str)) return ctx.measureText(str).width;
+  const fs=curFontPx(); let total=0;
+  splitRuns(str).forEach(r=> total += r.t==='e' ? fs : ctx.measureText(r.s).width);
+  return total;
 }
 // emoji-aware fillText replacement — honours current font/align/baseline
 function etext(str,x,y){
@@ -284,101 +292,101 @@ let wantPointer=false, dtGlobal=16, TNOW=0;
 // ── Zone data (all content verified from Amundi documentation) ─
 const ZONES = [
   {
-    id:'hq', name:'HQ Reception', emoji:'🏢',
+    id:'hq', name:'Accueil du Siège', emoji:'🏢',
     color:'#1565C0', accent:'#82B1FF',
-    desc:'History & Foundations',
+    desc:'Histoire & Origines',
     facts:[
-      'Amundi was officially launched on January 1, 2010 — born from the merger of Crédit Agricole Asset Management (CAAM) and Société Générale Asset Management (SGAM).',
-      'As of March 2026, Amundi manages €2,398 billion in AUM — making it the #1 asset manager in Europe and one of the top 10 globally.',
-      'Crédit Agricole Group holds 68.35% of Amundi\'s capital. Amundi is listed on Euronext Paris under the ticker "AMUN".'
+      'Amundi est née le 1er janvier 2010, de la fusion (le regroupement) de deux sociétés : Crédit Agricole Asset Management (CAAM) et Société Générale Asset Management (SGAM).',
+      'En mars 2026, Amundi gère 2 398 milliards d’euros pour ses clients (ce qu’on appelle les « encours »). C’est le n°1 de la gestion d’actifs en Europe et l’un des 10 plus grands du monde.',
+      'Le groupe Crédit Agricole possède 68,35 % d’Amundi : c’est son principal propriétaire. En Bourse à Paris (Euronext), l’action Amundi porte le code « AMUN ».'
     ],
     questions:[
-      { q:'When was Amundi officially founded?',
-        opts:['January 1, 2010','March 15, 2008','January 1, 2012','October 5, 2014'], ans:0 },
-      { q:'What is Amundi\'s total AUM as of March 2026?',
-        opts:['€1,800 billion','€2,100 billion','€2,398 billion','€3,000 billion'], ans:2 },
-      { q:'What % of Amundi does Crédit Agricole Group own?',
-        opts:['45.2%','68.35%','51.0%','82.7%'], ans:1 },
-      { q:'What is Amundi\'s stock ticker on Euronext Paris?',
+      { q:'Quand Amundi a-t-elle été créée ?',
+        opts:['1er janvier 2010','15 mars 2008','1er janvier 2012','5 octobre 2014'], ans:0 },
+      { q:'Combien Amundi gère-t-elle pour ses clients en mars 2026 (ses encours) ?',
+        opts:['1 800 milliards €','2 100 milliards €','2 398 milliards €','3 000 milliards €'], ans:2 },
+      { q:'Quelle part d’Amundi appartient au groupe Crédit Agricole ?',
+        opts:['45,2 %','68,35 %','51,0 %','82,7 %'], ans:1 },
+      { q:'Quel est le code de l’action Amundi à la Bourse de Paris ?',
         opts:['AMUN','AMU','AMDI','AMGE'], ans:0 }
     ]
   },
   {
-    id:'mp', name:'M&P Floor', emoji:'📊', featured:true,
+    id:'mp', name:'Étage Marketing & Produits', emoji:'📊', featured:true,
     color:'#2E7D32', accent:'#69F0AE',
-    desc:'Marketing & Products · ★ Featured',
+    desc:'Marketing & Produits · ★ À la une',
     facts:[
-      'The Marketing & Products (M&P) business line orchestrates product distribution across 22+ countries — acting as the commercial bridge between investment expertise and global markets.',
-      'Gilles Cutaya (age 49) became Head of M&P in January 2025, reporting to Céline Boyer-Chammard. He joined Amundi in 2015 and a major governance update was implemented in December 2024.',
-      'The M&P France team of ~7 professionals manages UCITS/OPC funds, EMTNs, structured bonds, ETFs, and bespoke mandates across all client segments.'
+      'L’équipe Marketing & Produits (M&P) fait connaître et vend les produits d’Amundi dans plus de 22 pays. C’est le pont entre les experts qui investissent et les clients du monde entier.',
+      'Gilles Cutaya (49 ans) dirige le Marketing & Produits depuis janvier 2025. Sa supérieure est Céline Boyer-Chammard. Arrivé chez Amundi en 2015, il a connu une grande réorganisation des responsables en décembre 2024.',
+      'En France, l’équipe M&P (environ 7 personnes) gère plusieurs types de placements : des fonds (OPC/UCITS, des « paniers » d’investissements), des ETF, des obligations et des produits sur mesure pour les clients.'
     ],
     questions:[
-      { q:'Who is Head of Marketing & Products (M&P) at Amundi since January 2025?',
+      { q:'Qui dirige le Marketing & Produits (M&P) depuis janvier 2025 ?',
         opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
-      { q:'Who does Gilles Cutaya (Head of M&P) directly report to?',
-        opts:['Valérie Baudson (CEO)','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
-      { q:'When was Amundi\'s major M&P governance update implemented?',
-        opts:['March 2023','June 2024','December 2024','January 2025'], ans:2 },
-      { q:'How many countries does M&P cross-border distribution cover?',
-        opts:['10+ countries','15+ countries','22+ countries','30+ countries'], ans:2 },
-      { q:'Which product scope does the M&P team manage?',
-        opts:['UCITS/OPC funds only','EMTNs & structured products only','UCITS, EMTNs, bonds, ETFs & structured products','ETFs and passive products only'], ans:2 }
+      { q:'Qui est le supérieur direct de Gilles Cutaya ?',
+        opts:['Valérie Baudson (directrice générale)','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+      { q:'Quand a eu lieu la grande réorganisation des responsables (la « gouvernance ») ?',
+        opts:['Mars 2023','Juin 2024','Décembre 2024','Janvier 2025'], ans:2 },
+      { q:'Dans combien de pays l’équipe M&P vend-elle ses produits ?',
+        opts:['Plus de 10 pays','Plus de 15 pays','Plus de 22 pays','Plus de 30 pays'], ans:2 },
+      { q:'Quels produits l’équipe M&P gère-t-elle ?',
+        opts:['Seulement des fonds (OPC/UCITS)','Seulement des produits structurés','Des fonds, des obligations, des ETF et des produits structurés','Seulement des ETF (produits indiciels)'], ans:2 }
     ]
   },
   {
-    id:'inv', name:'Investment Hub', emoji:'📈',
+    id:'inv', name:'Pôle Investissement', emoji:'📈',
     color:'#6A1B9A', accent:'#CE93D8',
-    desc:'Platforms & Capabilities',
+    desc:'Plateformes & Savoir-faire',
     facts:[
-      'Amundi runs 6 major investment platforms worldwide: Paris, London, Milan, Tokyo, Boston, and Dublin — ensuring true global execution capability.',
-      'After acquiring Lyxor Asset Management, Amundi became the 2nd largest ETF provider in Europe, with an extensive passive product range.',
-      'The acquisition of Pioneer Investments in 2017 cost €3,545 million and massively expanded Amundi\'s North American and Asian footprint.'
+      'Amundi possède 6 grands centres d’investissement dans le monde : Paris, Londres, Milan, Tokyo, Boston et Dublin. Cela lui permet d’agir sur toute la planète.',
+      'Après avoir racheté la société Lyxor, Amundi est devenue le 2e plus grand fournisseur d’ETF en Europe. Un ETF est un fonds coté en Bourse qui suit un indice, comme le CAC 40.',
+      'En 2017, Amundi a racheté la société Pioneer Investments pour 3 545 millions d’euros. Cet achat l’a beaucoup développée en Amérique du Nord et en Asie.'
     ],
     questions:[
-      { q:'How many global investment platforms does Amundi operate?',
+      { q:'Combien de grands centres d’investissement Amundi possède-t-elle dans le monde ?',
         opts:['4','5','6','8'], ans:2 },
-      { q:'After the Lyxor acquisition, Amundi ranks how in European ETFs?',
-        opts:['1st largest','2nd largest','3rd largest','4th largest'], ans:1 },
-      { q:'What was the acquisition price of Pioneer Investments in 2017?',
-        opts:['€1,200M','€2,890M','€3,545M','€5,000M'], ans:2 },
-      { q:'Which city hosts Amundi\'s North American investment platform?',
+      { q:'Après le rachat de Lyxor, à quelle place se classe Amundi pour les ETF en Europe ?',
+        opts:['1re place','2e place','3e place','4e place'], ans:1 },
+      { q:'Combien a coûté le rachat de Pioneer Investments en 2017 ?',
+        opts:['1 200 M€','2 890 M€','3 545 M€','5 000 M€'], ans:2 },
+      { q:'Dans quelle ville se trouve le centre d’Amundi en Amérique du Nord ?',
         opts:['New York','Chicago','Boston','Toronto'], ans:2 }
     ]
   },
   {
-    id:'strat', name:'Strategy 2028', emoji:'🎯',
+    id:'strat', name:'Stratégie 2028', emoji:'🎯',
     color:'#B71C1C', accent:'#FF8A80',
-    desc:'"Invest for the Future" Plan',
+    desc:'Plan « Investir pour l’avenir »',
     facts:[
-      'Amundi\'s strategic plan "Invest for the Future" covers 2025–2028, anchored on technology, sustainability, and accelerated global expansion.',
-      'Full-year 2025 saw Amundi record €88 billion in net inflows — a company-wide historical record that validated its commercial strategy.',
-      'In Q1 2026, Amundi reported +15% growth in adjusted net income year-on-year, ahead of analyst expectations and confirming the plan\'s trajectory.'
+      'Le plan stratégique d’Amundi s’appelle « Investir pour l’avenir » et couvre 2025 à 2028. Il mise sur trois choses : la technologie, le développement durable (l’écologie) et la conquête de nouveaux pays.',
+      'En 2025, les clients ont confié 88 milliards d’euros de plus à Amundi : c’est la « collecte nette » (l’argent qui rentre moins l’argent qui sort). Un record pour l’entreprise.',
+      'Au 1er trimestre 2026, le bénéfice d’Amundi a augmenté de 15 % par rapport à l’année précédente : mieux que ce que les experts attendaient.'
     ],
     questions:[
-      { q:'What is the name of Amundi\'s 2025–2028 strategic plan?',
-        opts:['Grow Together 2025','Invest for the Future','Finance for Change','Digital First 2028'], ans:1 },
-      { q:'What record net inflows did Amundi achieve in 2025?',
-        opts:['€45 billion','€67 billion','€88 billion','€112 billion'], ans:2 },
-      { q:'What was Amundi\'s adjusted net income growth in Q1 2026?',
-        opts:['+5%','+10%','+15%','+22%'], ans:2 }
+      { q:'Comment s’appelle le plan stratégique d’Amundi pour 2025–2028 ?',
+        opts:['Grandir ensemble 2025','Investir pour l’avenir','Financer le changement','Le numérique d’abord 2028'], ans:1 },
+      { q:'Quelle collecte nette record Amundi a-t-elle réalisée en 2025 ?',
+        opts:['45 milliards €','67 milliards €','88 milliards €','112 milliards €'], ans:2 },
+      { q:'De combien le bénéfice d’Amundi a-t-il augmenté au 1er trimestre 2026 ?',
+        opts:['+5 %','+10 %','+15 %','+22 %'], ans:2 }
     ]
   },
   {
-    id:'global', name:'Global Network', emoji:'🌍',
+    id:'global', name:'Réseau Mondial', emoji:'🌍',
     color:'#00695C', accent:'#80DEEA',
-    desc:'Worldwide Presence',
+    desc:'Présence dans le monde',
     facts:[
-      'Amundi serves 200+ million clients across 35+ countries on 5 continents — from retail savers in France to the world\'s largest sovereign wealth funds.',
-      'In May 2026, Amundi restructured into 5 global divisions to sharpen international commercial execution and client service responsiveness.',
-      'Key joint ventures: SBI Funds Management (India), NH-Amundi Asset Management (South Korea), and ABC-CA Fund Management (China).'
+      'Amundi sert plus de 200 millions de clients dans plus de 35 pays, sur les 5 continents : du simple particulier qui épargne jusqu’aux plus grands fonds d’État de la planète.',
+      'En mai 2026, Amundi s’est réorganisée en 5 grandes divisions (de grands services) pour être plus efficace et plus à l’écoute de ses clients dans le monde.',
+      'Amundi a aussi des partenariats (des « coentreprises ») : SBI Funds Management en Inde, NH-Amundi en Corée du Sud et ABC-CA en Chine.'
     ],
     questions:[
-      { q:'How many clients does Amundi serve globally?',
-        opts:['50 million+','100 million+','200 million+','500 million+'], ans:2 },
-      { q:'In May 2026, Amundi reorganized into how many global divisions?',
+      { q:'Combien de clients Amundi sert-elle dans le monde ?',
+        opts:['Plus de 50 millions','Plus de 100 millions','Plus de 200 millions','Plus de 500 millions'], ans:2 },
+      { q:'En mai 2026, en combien de grandes divisions Amundi s’est-elle réorganisée ?',
         opts:['3','4','5','7'], ans:2 },
-      { q:'Which is NOT one of Amundi\'s JV partnerships?',
-        opts:['SBI Funds Management (India)','NH-Amundi (South Korea)','HDFC AMC (India)','ABC-CA Fund Management (China)'], ans:2 }
+      { q:'Lequel n’est PAS un partenaire (une coentreprise) d’Amundi ?',
+        opts:['SBI Funds Management (Inde)','NH-Amundi (Corée du Sud)','HDFC AMC (Inde)','ABC-CA Fund Management (Chine)'], ans:2 }
     ]
   }
 ];
@@ -580,9 +588,9 @@ function drawRays(t,cx,cy,color,count,maxR){
 }
 
 // ── Thematic scrolling stock-ticker tape (terminal twist) ────
-const TICKER=[' AMUN ▲ +2.4% ',' AUM €2,398B ',' #1 IN EUROPE ',' NET INFLOWS €88B ▲ ',
-  ' ADJ. NET INCOME +15% ▲ ',' 200M+ CLIENTS ',' 35+ COUNTRIES ',' 6 PLATFORMS ',
-  ' INVEST FOR THE FUTURE 2025–2028 '];
+const TICKER=[' AMUN ▲ +2,4 % ',' ENCOURS 2 398 Md€ ',' N°1 EN EUROPE ',' COLLECTE NETTE +88 Md€ ▲ ',
+  ' BÉNÉFICE +15 % ▲ ',' +200 M DE CLIENTS ',' +35 PAYS ',' 6 CENTRES ',
+  ' INVESTIR POUR L’AVENIR 2025–2028 '];
 function drawTicker(t,color){
   const bh=u(0.038), by=H()-bh;
   ctx.save();
@@ -689,7 +697,7 @@ function sceneForum(x,y,w,h,t,quiet){
   if(!quiet){
     ctx.fillStyle='#eaf3ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font=`bold ${Math.round(h*0.07)}px sans-serif`; etext('Amundi',cx,cy-h*0.03);
-    ctx.font=`${Math.round(h*0.028)}px sans-serif`; etext('WORLD INVESTMENT FORUM',cx,cy+h*0.05);
+    ctx.font=`${Math.round(h*0.026)}px sans-serif`; etext('FORUM MONDIAL DE L’INVESTISSEMENT',cx,cy+h*0.05);
   }
   ctx.fillStyle='#0b1f44'; ctx.beginPath(); ctx.ellipse(cx,y+h*0.78,w*0.4,h*0.1,0,0,6.28); ctx.fill();
   ctx.fillStyle='#02060f';
@@ -734,7 +742,7 @@ function sceneCube(x,y,w,h,t){
   isoCube(x+w*0.27, y+h*0.5, Math.min(w,h)*0.2, '#5b9bd5','#3f7fb0','#2e6090');
   ctx.fillStyle='#eaf3ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font=`bold ${Math.round(h*0.075)}px sans-serif`; etext('2028',x+w*0.27,y+h*0.47);
-  ctx.font=`${Math.round(h*0.03)}px sans-serif`; etext('Strategic Plan',x+w*0.27,y+h*0.56);
+  ctx.font=`${Math.round(h*0.03)}px sans-serif`; etext('Plan stratégique',x+w*0.27,y+h*0.56);
 }
 // 5) Subsidiary / partner logo wall (image 5)
 function scenePartners(x,y,w,h,t){
@@ -997,6 +1005,10 @@ function drawButton(id,x,y,w,h,label,o={}){
   }
   ctx.font=o.font||`bold ${u(0.04)}px sans-serif`;
   ctx.fillStyle=o.color||'#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  // auto-shrink the label so longer (e.g. French) text never overflows
+  const maxw=w-u(0.05), lw=measureEtext(label);
+  if(lw>maxw){ const npx=Math.max(8,curFontPx()*maxw/lw);
+    ctx.font=ctx.font.replace(/(\d+(?:\.\d+)?)px/, npx.toFixed(1)+'px'); }
   etext(label,x+w/2,y+h/2+u(0.002));
   ctx.restore();
   const clicked=!!CLICK && hit(x,y,w,h) && !TR.active;
@@ -1046,14 +1058,14 @@ function drawIntro(t){
     ctx.shadowBlur=0;
     ctx.font=`200 ${u(0.072)}px sans-serif`; ctx.fillStyle='#80DEEA';
     try{ctx.letterSpacing=u(0.02)+'px';}catch(e){}
-    etext('EXPLORER',W()/2,H()*0.325+bob);
+    etext('EXPLORATEUR',W()/2,H()*0.325+bob);
     try{ctx.letterSpacing='0px';}catch(e){}
   });
 
   withEntry(age,150,600,()=>{
     ctx.font=`${u(0.032)}px sans-serif`; ctx.fillStyle='#90A4AE';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    etext("Discover Europe's #1 Asset Manager",W()/2,H()*0.44);
+    etext('Découvre le n°1 de la gestion d’actifs en Europe',W()/2,H()*0.44);
   });
 
   // zone pills (staggered, hover-bob)
@@ -1079,13 +1091,13 @@ function drawIntro(t){
   withEntry(age,650,500,()=>{
     ctx.font=`${u(0.027)}px sans-serif`; ctx.fillStyle='#546E7A';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    etext('5 Zones  ·  19 Questions  ·  ~10 minutes',W()/2,H()*0.645);
+    etext('5 zones  ·  19 questions  ·  ~10 minutes',W()/2,H()*0.645);
   });
 
   // start button (accurate hit-area via fadeIn only)
   const bW=u(0.5),bH=u(0.1),bX=(W()-bW)/2,bY=H()*0.73;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,780,500);
-  const clicked=drawButton('start',bX,bY,bW,bH,'🚀  START EXPEDITION',
+  const clicked=drawButton('start',bX,bY,bW,bH,'🚀  COMMENCER L’EXPÉDITION',
     {grad:['#00E5FF','#26C6DA','#FFB300'],glow:'#00E5FF',color:'#04121b',
      font:`bold ${u(0.044)}px sans-serif`,silent:true});
   ctx.restore();
@@ -1096,8 +1108,8 @@ function drawIntro(t){
   ctx.font=`${u(0.022)}px sans-serif`; ctx.fillStyle='#37505c';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.globalAlpha=0.55+0.35*Math.sin(t/500);
-  etext(SFX.muted?'🔇 sound off — tap speaker to enable'
-                         :'🔊 sound on — best with audio',W()/2,H()*0.86);
+  etext(SFX.muted?'🔇 son coupé — touche le haut-parleur pour l’activer'
+                         :'🔊 son activé — à écouter avec le son',W()/2,H()*0.86);
   ctx.restore();
 }
 
@@ -1111,13 +1123,13 @@ function drawMap(t){
     ctx.font=`bold ${u(0.05)}px sans-serif`; ctx.fillStyle='#E0F7FA';
     ctx.textAlign='center'; ctx.textBaseline='top';
     try{ctx.letterSpacing=u(0.006)+'px';}catch(e){}
-    etext('SELECT YOUR ZONE',W()/2,u(0.028));
+    etext('CHOISIS TA ZONE',W()/2,u(0.028));
     try{ctx.letterSpacing='0px';}catch(e){}
     ctx.font=`${u(0.03)}px sans-serif`;
     ctx.fillStyle='#FFB300'; ctx.textAlign='right';
     etext(`⭐ ${GS.totalScore} pts`,W()-u(0.025),u(0.094));
     ctx.fillStyle='#607D8B'; ctx.textAlign='left';
-    etext(`${GS.done.size}/5 zones explored`,u(0.025),u(0.094));
+    etext(`${GS.done.size}/5 zones explorées`,u(0.025),u(0.094));
   });
 
   const mg=u(0.022), cH=u(0.3), row0Y=H()*0.16, row1Y=H()*0.575;
@@ -1159,7 +1171,7 @@ function drawMap(t){
       ctx.restore();
       if(!isDone && k>0.05){
         ctx.globalAlpha*=k; ctx.fillStyle=z.accent; ctx.font=`bold ${u(0.02)}px sans-serif`;
-        etext('▶ ENTER',cx+cW/2,cy+cH*0.92);
+        etext('▶ ENTRER',cx+cW/2,cy+cH*0.92);
       }
       if(z.featured&&!isDone){
         ctx.globalAlpha=1;
@@ -1169,7 +1181,7 @@ function drawMap(t){
         ctx.shadowColor='#FFB300'; ctx.shadowBlur=u(0.02)*bp; ctx.fill(); ctx.shadowBlur=0;
         ctx.font=`bold ${u(0.02)}px sans-serif`; ctx.fillStyle='#071018';
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        etext('★ FEATURED',bx+bw/2,by+bh/2);
+        etext('★ À LA UNE',bx+bw/2,by+bh/2);
       }
       ctx.restore();
       if(!isDone && hit(cx,cy,cW,cH) && !TR.active){ prepZone(i); goto('fact',{color:z.color}); }
@@ -1195,7 +1207,7 @@ function drawFact(t){
     ctx.font=`bold ${u(0.044)}px sans-serif`; ctx.fillStyle='#fff';
     etext(z.name,u(0.11),barH/2);
     ctx.textAlign='right'; ctx.font=`${u(0.028)}px sans-serif`; ctx.fillStyle=z.accent;
-    etext(`Fact ${GS.factIdx+1}/${z.facts.length}`,W()-u(0.025),barH/2);
+    etext(`Info ${GS.factIdx+1}/${z.facts.length}`,W()-u(0.025),barH/2);
   });
 
   const padX=u(0.05), cW=W()-padX*2;
@@ -1243,7 +1255,7 @@ function drawFact(t){
   const bW=u(0.48),bH=u(0.088),bX=(W()-bW)/2,bY=H()*0.81;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,260,400);
   const clicked=drawButton('factnav',bX,bY,bW,bH,
-    isLast?'🎯  START QUIZ':'NEXT FACT  →',
+    isLast?'🎯  COMMENCER LE QUIZ':'INFO SUIVANTE  →',
     isLast?{grad:['#00E5FF','#FFB300'],glow:'#00E5FF',color:'#04121b'}
           :{fill:z.color,glow:z.accent,color:'#fff'});
   ctx.restore();
@@ -1288,7 +1300,7 @@ function drawQuiz(t){
     ctx.fillStyle=fire?'#FF7043':'#FF8A65';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     if(fire){ ctx.shadowColor='#FF5722'; ctx.shadowBlur=u(0.022*(0.6+0.4*Math.sin(t/120))); }
-    etext(`🔥 ${GS.streak}${fire?' ON FIRE!':' STREAK'}`,W()/2,barH*0.84);
+    etext(`🔥 ${GS.streak}${fire?' EN FEU !':' DE SUITE'}`,W()/2,barH*0.84);
     ctx.restore();
     if(fire && Math.random()<0.5) ember(W()/2+(Math.random()-0.5)*u(0.24),barH*0.86);
   }
@@ -1411,8 +1423,8 @@ function drawQuiz(t){
     ctx.font=`bold ${u(0.028)}px sans-serif`; ctx.fillStyle='#fff';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const msg=GS.fbCorrect
-      ? `✅  Correct!  +100${GS.streak>1?'   🔥 '+GS.streak+' streak':''}`
-      : `❌  Answer:  ${q.opts[q.ans]}`;
+      ? `✅  Bravo !  +100${GS.streak>1?'   🔥 '+GS.streak+' de suite':''}`
+      : `❌  Réponse :  ${q.opts[q.ans]}`;
     etext(msg,W()/2,fbY+fbH/2);
     ctx.restore();
   }
@@ -1444,7 +1456,7 @@ function drawZResult(t){
   ctx.font=`900 ${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.03);
-  etext(z.name.toUpperCase()+'  CLEARED',0,0);
+  etext(z.name.toUpperCase()+'  TERMINÉE',0,0);
   ctx.restore();
 
   const cX=u(0.07), cY=H()*0.19, cW=W()-u(0.14), cH=H()*0.46;
@@ -1469,11 +1481,11 @@ function drawZResult(t){
   ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.03);
   etext(`+${shown}`,W()/2,cY+cH*0.46); ctx.shadowBlur=0;
   ctx.font=`${u(0.03)}px sans-serif`; ctx.fillStyle='#90A4AE';
-  etext('points earned',W()/2,cY+cH*0.61);
+  etext('points gagnés',W()/2,cY+cH*0.61);
   ctx.font=`bold ${u(0.034)}px sans-serif`;
   ctx.fillStyle=pct>=70?'#69F0AE':pct>=40?'#FFB300':'#FF8A80';
-  etext(`${GS.lastZoneCorrect}/${z.questions.length} correct  ·  ${pct}%`,W()/2,cY+cH*0.75);
-  const msg=pct===100?'🏆 Perfect score!':pct>=70?'🌟 Excellent!':pct>=40?'📚 Keep going!':'💪 Room to grow!';
+  etext(`${GS.lastZoneCorrect}/${z.questions.length} bonnes réponses  ·  ${pct} %`,W()/2,cY+cH*0.75);
+  const msg=pct===100?'🏆 Score parfait !':pct>=70?'🌟 Excellent !':pct>=40?'📚 Continue !':'💪 Tu peux progresser !';
   ctx.font=`${u(0.032)}px sans-serif`; ctx.fillStyle='#E0F7FA';
   etext(msg,W()/2,cY+cH*0.88);
   ctx.restore();
@@ -1488,7 +1500,7 @@ function drawZResult(t){
   const bW=u(0.52),bH=u(0.092),bX=(W()-bW)/2,bY=H()*0.8;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,500,400);
   const clicked=drawButton('zback',bX,bY,bW,bH,
-    allDone?'🏆  SEE FINAL RESULTS':'🗺  BACK TO MAP',
+    allDone?'🏆  VOIR LE RÉSULTAT FINAL':'🗺  RETOUR À LA CARTE',
     {grad:[z.color,z.accent],glow:z.accent,color:'#04121b'});
   ctx.restore();
   if(clicked){
@@ -1519,7 +1531,7 @@ function drawGameover(t){
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.shadowColor='#FFB300'; ctx.shadowBlur=u(0.03)+u(0.01)*Math.sin(t/400);
   try{ctx.letterSpacing=u(0.004)+'px';}catch(e){}
-  etext('EXPEDITION COMPLETE!',W()/2,H()*0.225);
+  etext('EXPÉDITION TERMINÉE !',W()/2,H()*0.225);
   try{ctx.letterSpacing='0px';}catch(e){} ctx.shadowBlur=0;
   ctx.restore();
 
@@ -1527,8 +1539,8 @@ function drawGameover(t){
   ctx.save(); ctx.globalAlpha*=fadeIn(age,300,500);
   ctx.font=`${u(0.038)}px sans-serif`; ctx.fillStyle='#80DEEA';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  etext(`Final Score: ⭐ ${shown} / ${MAX_SCORE}  (${Math.round(shown/MAX_SCORE*100)}%)`,W()/2,H()*0.31);
-  const rank=pct===100?'🥇 Finance Legend':pct>=80?'🥈 Senior Analyst':pct>=60?'🥉 Junior Associate':'📊 Market Observer';
+  etext(`Score final : ⭐ ${shown} / ${MAX_SCORE}  (${Math.round(shown/MAX_SCORE*100)} %)`,W()/2,H()*0.31);
+  const rank=pct===100?'🥇 Légende de la finance':pct>=80?'🥈 Analyste confirmé':pct>=60?'🥉 Apprenti investisseur':'📊 Observateur des marchés';
   ctx.font=`bold ${u(0.042)}px sans-serif`; ctx.fillStyle='#E0F7FA';
   etext(rank,W()/2,H()*0.385);
   ctx.restore();
@@ -1552,7 +1564,7 @@ function drawGameover(t){
 
   const bW=u(0.48),bH=u(0.092),bX=(W()-bW)/2,bY=H()*0.88;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,900,400);
-  const clicked=drawButton('again',bX,bY,bW,bH,'🔄  PLAY AGAIN',
+  const clicked=drawButton('again',bX,bY,bW,bH,'🔄  REJOUER',
     {grad:['#00E5FF','#FFB300'],glow:'#00E5FF',color:'#04121b'});
   ctx.restore();
   if(clicked){ resetGame(); goto('intro',{color:'#00ACC1'}); }
