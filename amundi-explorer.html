@@ -318,7 +318,7 @@ const ZONES = [
     facts:[
       'La ligne métier Marketing & Produits (M&P) commercialise les produits d’Amundi dans plus de 22 pays. Elle fait le lien entre l’expertise d’investissement et les clients du monde entier.',
       'Gilles Cutaya (49 ans) dirige le Marketing & Produits depuis janvier 2025. Il est rattaché à Céline Boyer-Chammard. Entré chez Amundi en 2015, il a accompagné la refonte de la gouvernance (l’organisation des dirigeants) de décembre 2024.',
-      'En France, l’équipe M&P (environ 7 personnes) gère une gamme variée de produits : fonds (OPC/UCITS), ETF, obligations et mandats sur mesure pour chaque type de client.'
+      'En France, le Marketing & Produits réunit plusieurs équipes spécialisées, et non quelques personnes : un COO (directeur des opérations) et un Chief of Staff, un pôle Content (French, Global, Digital), la Business Intelligence et un pôle Produits (French Products Implementation, Global Products, PRG).'
     ],
     questions:[
       { q:'Qui dirige le Marketing & Produits (M&P) depuis janvier 2025 ?',
@@ -329,8 +329,8 @@ const ZONES = [
         opts:['Mars 2023','Juin 2024','Décembre 2024','Janvier 2025'], ans:2 },
       { q:'Dans combien de pays l’équipe M&P commercialise-t-elle ses produits ?',
         opts:['Plus de 10 pays','Plus de 15 pays','Plus de 22 pays','Plus de 30 pays'], ans:2 },
-      { q:'Quelle gamme de produits l’équipe M&P gère-t-elle ?',
-        opts:['Uniquement des fonds (OPC/UCITS)','Uniquement des produits structurés','Des fonds, des obligations, des ETF et des produits structurés','Uniquement des ETF (gestion indicielle)'], ans:2 }
+      { q:'En France, comment la ligne métier M&P est-elle organisée ?',
+        opts:['Une seule équipe d’environ 7 personnes','Plusieurs équipes spécialisées (COO, Content, Business Intelligence, Produits…)','Uniquement une équipe de vente','Un seul gérant de portefeuille'], ans:1 }
     ]
   },
   {
@@ -1225,7 +1225,7 @@ function drawFact(t){
   ctx.restore();
 
   // fact text card
-  const cY=H()*0.475, cH=H()*0.25;
+  const cY=H()*0.475, cH=H()*0.27;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,160,450);
   glassCard(padX,cY,cW,cH,u(0.018),{border:hexA(z.accent,0.4),shadow:hexA(z.accent,0.3)});
   ctx.restore();
@@ -1236,8 +1236,8 @@ function drawFact(t){
   ctx.font=`${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
   ctx.textAlign='center'; ctx.textBaseline='top';
   etext('💡',W()/2,cY+u(0.022));
-  ctx.font=`${u(0.032)}px sans-serif`; ctx.fillStyle='#CFD8DC';
-  drawCentered(z.facts[GS.factIdx],W()/2,cY+u(0.085),cW-u(0.08),u(0.046));
+  ctx.font=`${u(0.03)}px sans-serif`; ctx.fillStyle='#CFD8DC';
+  drawCentered(z.facts[GS.factIdx],W()/2,cY+u(0.07),cW-u(0.08),u(0.044));
   ctx.restore();
 
   // progress dots (active pulses)
