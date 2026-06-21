@@ -11,10 +11,22 @@
               font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
   canvas { display:block; touch-action:none; cursor:pointer;
            box-shadow:0 0 80px rgba(0,172,193,0.18); }
+  #lang { position:fixed; top:11px; right:13px; z-index:10;
+          background:rgba(8,18,28,0.85); color:#dff3ff;
+          border:1px solid rgba(0,229,255,0.5); border-radius:9px;
+          padding:7px 30px 7px 11px; font:600 14px/1.1 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          cursor:pointer; outline:none; -webkit-appearance:none; appearance:none;
+          background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2300E5FF' stroke-width='1.6'/></svg>");
+          background-repeat:no-repeat; background-position:right 10px center;
+          box-shadow:0 4px 18px rgba(0,0,0,0.4); transition:border-color .15s; }
+  #lang:hover { border-color:#00E5FF; }
+  #lang option { background:#0a1622; color:#dff3ff; }
+  @media (max-width:640px){ #lang{ font-size:12px; padding:5px 26px 5px 9px; top:8px; right:9px; } }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<select id="lang" aria-label="Language / Langue"></select>
 <script>
 // ╔══════════════════════════════════════════════════════════════╗
 //   AMUNDI EXPLORER — Educational Canvas Quiz Game · DELUXE
@@ -50,6 +62,22 @@ window.addEventListener('resize', resize);
 const W = () => C.width;
 const H = () => C.height;
 const u = f  => Math.round(H() * f);   // proportional unit
+
+// ── Language state (8 locales, English default) ──────────────
+const LANGS = [
+  {code:'en',  label:'English'},
+  {code:'fr',  label:'Français'},
+  {code:'de',  label:'Deutsch'},
+  {code:'es',  label:'Español'},
+  {code:'it',  label:'Italiano'},
+  {code:'ja',  label:'日本語'},
+  {code:'yue', label:'廣東話'},   // Hong Kong (Traditional)
+  {code:'zh',  label:'华语'}      // Singapore Mandarin (Simplified)
+];
+let LANG = 'en';
+try { const s = localStorage.getItem('amundi_lang'); if(s && LANGS.some(l=>l.code===s)) LANG = s; } catch(e){}
+let U;                                  // current UI string bundle (set each frame)
+function tpl(s,o){ return (''+s).replace(/\{(\w+)\}/g,(_,k)=> (o && k in o) ? o[k] : ''); }
 
 // ── Math / easing helpers ────────────────────────────────────
 const clamp = (v,a,b)=> v<a?a : v>b?b : v;
@@ -290,7 +318,105 @@ function hovered(id,is){ const p=HOV[id]||false; HOV[id]=is; if(is&&!p) SFX.hove
 let wantPointer=false, dtGlobal=16, TNOW=0;
 
 // ── Zone data (all content verified from Amundi documentation) ─
-const ZONES = [
+const ZONE_META = [
+  {id:'hq',     emoji:'🏢', color:'#1565C0', accent:'#82B1FF'},
+  {id:'mp',     emoji:'📊', color:'#2E7D32', accent:'#69F0AE', featured:true},
+  {id:'inv',    emoji:'📈', color:'#6A1B9A', accent:'#CE93D8'},
+  {id:'strat',  emoji:'🎯', color:'#B71C1C', accent:'#FF8A80'},
+  {id:'global', emoji:'🌍', color:'#00695C', accent:'#80DEEA'}
+];
+
+const I18N = {
+  // ===== ENGLISH (default) =====
+  en: {
+    ui:{
+      explorer:'EXPLORER', subtitle:'Discover Europe’s #1 asset manager',
+      stats:'5 zones · 19 questions · ~10 min',
+      start:'🚀  START EXPEDITION',
+      soundOn:'🔊 sound on — best with audio', soundOff:'🔇 sound off — tap the speaker to enable',
+      selectZone:'CHOOSE YOUR ZONE', pts:'pts', zonesDone:'{n}/5 zones explored',
+      questionsN:'{n} questions', enter:'▶ ENTER', featured:'★ FEATURED',
+      factN:'Fact {i}/{n}', nextFact:'NEXT FACT  →', startQuiz:'🎯  START QUIZ',
+      qN:'Q {i}/{n}', streakFire:'ON FIRE!', streakWord:'STREAK',
+      correct:'✅  Correct!  +100', streakSuffix:'   🔥 {n} in a row', answerWas:'❌  Answer:  {a}',
+      cleared:'CLEARED', pointsEarned:'points earned', correctOf:'{c}/{n} correct  ·  {p}%',
+      msgPerfect:'🏆 Perfect score!', msgGreat:'🌟 Excellent!', msgOk:'📚 Keep going!', msgLow:'💪 Room to grow!',
+      total:'Total', backMap:'🗺  BACK TO MAP', seeFinal:'🏆  SEE FINAL RESULTS',
+      complete:'EXPEDITION COMPLETE!', finalScore:'Final score: ⭐ {s} / {m}  ({p}%)',
+      rankLegend:'🥇 Finance Legend', rankAnalyst:'🥈 Senior Analyst', rankAssociate:'🥉 Junior Associate', rankObserver:'📊 Market Observer',
+      playAgain:'🔄  PLAY AGAIN',
+      ticker:[' AMUN ▲ +2.4% ',' AUM €2,398B ',' #1 IN EUROPE ',' NET INFLOWS +€88B ▲ ',' ADJ. NET INCOME +15% ▲ ',' 200M+ CLIENTS ',' 35+ COUNTRIES ',' 6 PLATFORMS ',' INVEST FOR THE FUTURE 2025–2028 '],
+      forum:'WORLD INVESTMENT FORUM', stratPlan:'Strategic Plan'
+    },
+    zones:[
+      { name:'Head Office', desc:'History & Milestones', facts:[
+        'Amundi was created on 1 January 2010 from the merger of two asset managers: Crédit Agricole Asset Management (CAAM) and Société Générale Asset Management (SGAM).',
+        'As of March 2026, Amundi manages €2,398 billion of assets under management (AUM) — the money its clients entrust to it. It is Europe’s leading asset manager and one of the ten largest worldwide.',
+        'Crédit Agricole Group holds 68.35% of Amundi’s share capital, making it the reference shareholder (the main owner). Amundi is listed on Euronext Paris under the ticker “AMUN”.'],
+        questions:[
+          { q:'When was Amundi created?', opts:['1 January 2010','15 March 2008','1 January 2012','5 October 2014'], ans:0 },
+          { q:'How much AUM does Amundi manage as of March 2026?', opts:['€1,800 billion','€2,100 billion','€2,398 billion','€3,000 billion'], ans:2 },
+          { q:'What share of Amundi’s capital does Crédit Agricole Group hold?', opts:['45.2%','68.35%','51.0%','82.7%'], ans:1 },
+          { q:'Under which ticker is Amundi listed on Euronext Paris?', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'Marketing & Products', desc:'Distribution & Marketing · ★ Featured', facts:[
+        'The Marketing & Products (M&P) business line markets Amundi’s products in more than 22 countries. It bridges investment expertise and clients worldwide.',
+        'Gilles Cutaya (49) has led Marketing & Products since January 2025. He reports to Céline Boyer-Chammard. He joined Amundi in 2015 and supported the December 2024 governance overhaul.',
+        'In France, Marketing & Products is not a handful of people but several specialised teams: a COO and a Chief of Staff, a Content pole (French, Global, Digital), Business Intelligence, and a Products pole (French Products Implementation, Global Products, PRG).'],
+        questions:[
+          { q:'Who has led Marketing & Products (M&P) since January 2025?', opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
+          { q:'Whom does Gilles Cutaya report to?', opts:['Valérie Baudson (CEO)','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+          { q:'When did Amundi’s governance overhaul take place?', opts:['March 2023','June 2024','December 2024','January 2025'], ans:2 },
+          { q:'In how many countries does M&P market its products?', opts:['10+ countries','15+ countries','22+ countries','30+ countries'], ans:2 },
+          { q:'How is the M&P business line organised in France?', opts:['A single team of about 7 people','Several specialised teams (COO, Content, Business Intelligence, Products…)','Only a sales team','A single portfolio manager'], ans:1 } ] },
+      { name:'Investment Hub', desc:'Platforms & Expertise', facts:[
+        'Amundi relies on 6 major investment platforms worldwide: Paris, London, Milan, Tokyo, Boston and Dublin, giving it truly global reach.',
+        'With the acquisition of Lyxor, Amundi became the second-largest ETF provider in Europe. An ETF is a stock-exchange-listed fund that tracks an index, such as the CAC 40.',
+        'In 2017, the acquisition of Pioneer Investments, for €3,545 million, significantly strengthened Amundi’s presence in North America and Asia.'],
+        questions:[
+          { q:'How many major investment platforms does Amundi rely on worldwide?', opts:['4','5','6','8'], ans:2 },
+          { q:'After acquiring Lyxor, where does Amundi rank for ETFs in Europe?', opts:['1st','2nd','3rd','4th'], ans:1 },
+          { q:'How much did Amundi pay to acquire Pioneer Investments in 2017?', opts:['€1,200M','€2,890M','€3,545M','€5,000M'], ans:2 },
+          { q:'Which city hosts Amundi’s North American investment platform?', opts:['New York','Chicago','Boston','Toronto'], ans:2 } ] },
+      { name:'Strategy 2028', desc:'“Invest for the Future” plan', facts:[
+        'Amundi’s strategic plan, “Invest for the Future”, covers 2025-2028. It rests on three pillars: technology, sustainable finance (responsible investment) and international expansion.',
+        'In 2025, Amundi posted record net inflows of €88 billion. Net inflows are the capital clients entrust, once withdrawals are deducted.',
+        'In the first quarter of 2026, Amundi’s adjusted net income (its profit) rose 15% year on year, ahead of analysts’ expectations.'],
+        questions:[
+          { q:'What is the name of Amundi’s 2025-2028 strategic plan?', opts:['Grow Together 2025','Invest for the Future','Finance for Change','Digital First 2028'], ans:1 },
+          { q:'What record net inflows did Amundi reach in 2025?', opts:['€45 billion','€67 billion','€88 billion','€112 billion'], ans:2 },
+          { q:'By how much did Amundi’s adjusted net income rise in Q1 2026?', opts:['+5%','+10%','+15%','+22%'], ans:2 } ] },
+      { name:'Global Network', desc:'International Presence', facts:[
+        'Amundi serves more than 200 million clients in over 35 countries across five continents: from everyday savers to the world’s largest sovereign wealth funds.',
+        'In May 2026, Amundi reorganised its activities into 5 global divisions to boost commercial efficiency and responsiveness to clients.',
+        'Amundi has also formed several international partnerships (joint ventures): SBI Funds Management in India, NH-Amundi in South Korea and ABC-CA in China.'],
+        questions:[
+          { q:'How many clients does Amundi serve worldwide?', opts:['50 million+','100 million+','200 million+','500 million+'], ans:2 },
+          { q:'In May 2026, into how many global divisions did Amundi reorganise?', opts:['3','4','5','7'], ans:2 },
+          { q:'Which of these is NOT an Amundi partner (joint venture)?', opts:['SBI Funds Management (India)','NH-Amundi (South Korea)','HDFC AMC (India)','ABC-CA Fund Management (China)'], ans:2 } ] }
+    ]
+  },
+  // ===== FRANÇAIS =====
+  fr: {
+    ui:{
+      explorer:'EXPLORATEUR', subtitle:'Découvre le n°1 de la gestion d’actifs en Europe',
+      stats:'5 zones · 19 questions · ~10 min',
+      start:'🚀  COMMENCER L’EXPÉDITION',
+      soundOn:'🔊 son activé — à écouter avec le son', soundOff:'🔇 son coupé — touche le haut-parleur pour l’activer',
+      selectZone:'CHOISIS TA ZONE', pts:'pts', zonesDone:'{n}/5 zones explorées',
+      questionsN:'{n} questions', enter:'▶ ENTRER', featured:'★ À LA UNE',
+      factN:'Info {i}/{n}', nextFact:'INFO SUIVANTE  →', startQuiz:'🎯  COMMENCER LE QUIZ',
+      qN:'Q {i}/{n}', streakFire:'EN FEU !', streakWord:'DE SUITE',
+      correct:'✅  Bravo !  +100', streakSuffix:'   🔥 {n} de suite', answerWas:'❌  Réponse :  {a}',
+      cleared:'TERMINÉE', pointsEarned:'points gagnés', correctOf:'{c}/{n} bonnes réponses  ·  {p} %',
+      msgPerfect:'🏆 Score parfait !', msgGreat:'🌟 Excellent !', msgOk:'📚 Continue !', msgLow:'💪 Tu peux progresser !',
+      total:'Total', backMap:'🗺  RETOUR À LA CARTE', seeFinal:'🏆  VOIR LE RÉSULTAT FINAL',
+      complete:'EXPÉDITION TERMINÉE !', finalScore:'Score final : ⭐ {s} / {m}  ({p} %)',
+      rankLegend:'🥇 Légende de la finance', rankAnalyst:'🥈 Analyste confirmé', rankAssociate:'🥉 Apprenti investisseur', rankObserver:'📊 Observateur des marchés',
+      playAgain:'🔄  REJOUER',
+      ticker:[' AMUN ▲ +2,4 % ',' ENCOURS 2 398 Md€ ',' N°1 EN EUROPE ',' COLLECTE NETTE +88 Md€ ▲ ',' BÉNÉFICE +15 % ▲ ',' +200 M DE CLIENTS ',' +35 PAYS ',' 6 CENTRES ',' INVESTIR POUR L’AVENIR 2025–2028 '],
+      forum:'FORUM MONDIAL DE L’INVESTISSEMENT', stratPlan:'Plan stratégique'
+    },
+    zones:[
   {
     id:'hq', name:'Siège Social', emoji:'🏢',
     color:'#1565C0', accent:'#82B1FF',
@@ -389,12 +515,427 @@ const ZONES = [
         opts:['SBI Funds Management (Inde)','NH-Amundi (Corée du Sud)','HDFC AMC (Inde)','ABC-CA Fund Management (Chine)'], ans:2 }
     ]
   }
-];
+  ] },
+  // ===== DEUTSCH =====
+  de: {
+    ui:{
+      explorer:'ENTDECKER', subtitle:'Entdecke Europas Vermögensverwalter Nr. 1',
+      stats:'5 Zonen · 19 Fragen · ~10 Min.',
+      start:'🚀  EXPEDITION STARTEN',
+      soundOn:'🔊 Ton an — am besten mit Ton', soundOff:'🔇 Ton aus — tippe auf den Lautsprecher',
+      selectZone:'WÄHLE DEINE ZONE', pts:'Pkt.', zonesDone:'{n}/5 Zonen erkundet',
+      questionsN:'{n} Fragen', enter:'▶ BETRETEN', featured:'★ EMPFOHLEN',
+      factN:'Fakt {i}/{n}', nextFact:'NÄCHSTER FAKT  →', startQuiz:'🎯  QUIZ STARTEN',
+      qN:'F {i}/{n}', streakFire:'IN FLAMMEN!', streakWord:'IN FOLGE',
+      correct:'✅  Richtig!  +100', streakSuffix:'   🔥 {n} in Folge', answerWas:'❌  Antwort:  {a}',
+      cleared:'GESCHAFFT', pointsEarned:'Punkte erzielt', correctOf:'{c}/{n} richtig  ·  {p} %',
+      msgPerfect:'🏆 Perfekte Punktzahl!', msgGreat:'🌟 Ausgezeichnet!', msgOk:'📚 Weiter so!', msgLow:'💪 Da geht noch was!',
+      total:'Gesamt', backMap:'🗺  ZURÜCK ZUR KARTE', seeFinal:'🏆  ENDERGEBNIS ANZEIGEN',
+      complete:'EXPEDITION ABGESCHLOSSEN!', finalScore:'Endstand: ⭐ {s} / {m}  ({p} %)',
+      rankLegend:'🥇 Finanzlegende', rankAnalyst:'🥈 Senior Analyst', rankAssociate:'🥉 Junior-Analyst', rankObserver:'📊 Marktbeobachter',
+      playAgain:'🔄  NOCHMAL SPIELEN',
+      ticker:[' AMUN ▲ +2,4 % ',' AUM 2.398 Mrd. € ',' NR. 1 IN EUROPA ',' NETTOZUFLÜSSE +88 Mrd. € ▲ ',' BER. NETTOGEWINN +15 % ▲ ',' 200 MIO.+ KUNDEN ',' 35+ LÄNDER ',' 6 PLATTFORMEN ',' IN DIE ZUKUNFT INVESTIEREN 2025–2028 '],
+      forum:'WELT-INVESTMENTFORUM', stratPlan:'Strategieplan'
+    },
+    zones:[
+      { name:'Hauptsitz', desc:'Geschichte & Meilensteine', facts:[
+        'Amundi entstand am 1. Januar 2010 aus der Fusion zweier Vermögensverwalter: Crédit Agricole Asset Management (CAAM) und Société Générale Asset Management (SGAM).',
+        'Im März 2026 verwaltet Amundi ein Vermögen von 2.398 Mrd. € (Assets under Management, AUM) — das Geld, das ihm die Kunden anvertrauen. Amundi ist der größte Vermögensverwalter Europas und einer der zehn größten weltweit.',
+        'Die Crédit Agricole Gruppe hält 68,35 % des Aktienkapitals von Amundi und ist damit Ankeraktionär (Haupteigentümer). Die Amundi-Aktie ist an der Euronext Paris unter dem Kürzel „AMUN“ notiert.'],
+        questions:[
+          { q:'Wann wurde Amundi gegründet?', opts:['1. Januar 2010','15. März 2008','1. Januar 2012','5. Oktober 2014'], ans:0 },
+          { q:'Wie viel AUM verwaltet Amundi im März 2026?', opts:['1.800 Mrd. €','2.100 Mrd. €','2.398 Mrd. €','3.000 Mrd. €'], ans:2 },
+          { q:'Welchen Anteil am Kapital von Amundi hält die Crédit Agricole Gruppe?', opts:['45,2 %','68,35 %','51,0 %','82,7 %'], ans:1 },
+          { q:'Unter welchem Kürzel ist Amundi an der Euronext Paris notiert?', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'Marketing & Produkte', desc:'Vertrieb & Marketing · ★ Empfohlen', facts:[
+        'Der Geschäftsbereich Marketing & Produkte (M&P) vermarktet die Produkte von Amundi in über 22 Ländern. Er verbindet Anlageexpertise mit Kunden weltweit.',
+        'Gilles Cutaya (49) leitet Marketing & Produkte seit Januar 2025. Er berichtet an Céline Boyer-Chammard. Er kam 2015 zu Amundi und begleitete die Governance-Reform vom Dezember 2024.',
+        'In Frankreich ist Marketing & Produkte keine Handvoll Personen, sondern mehrere spezialisierte Teams: ein COO und ein Chief of Staff, ein Bereich Content (French, Global, Digital), Business Intelligence sowie ein Bereich Produkte (French Products Implementation, Global Products, PRG).'],
+        questions:[
+          { q:'Wer leitet Marketing & Produkte (M&P) seit Januar 2025?', opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
+          { q:'An wen berichtet Gilles Cutaya?', opts:['Valérie Baudson (CEO)','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+          { q:'Wann fand die Governance-Reform von Amundi statt?', opts:['März 2023','Juni 2024','Dezember 2024','Januar 2025'], ans:2 },
+          { q:'In wie vielen Ländern vermarktet M&P seine Produkte?', opts:['10+ Länder','15+ Länder','22+ Länder','30+ Länder'], ans:2 },
+          { q:'Wie ist der Bereich M&P in Frankreich organisiert?', opts:['Ein einziges Team von rund 7 Personen','Mehrere spezialisierte Teams (COO, Content, Business Intelligence, Produkte …)','Nur ein Vertriebsteam','Ein einzelner Portfoliomanager'], ans:1 } ] },
+      { name:'Investment-Hub', desc:'Plattformen & Expertise', facts:[
+        'Amundi stützt sich auf 6 große Investmentplattformen weltweit: Paris, London, Mailand, Tokio, Boston und Dublin — für eine wirklich globale Reichweite.',
+        'Mit der Übernahme von Lyxor wurde Amundi zum zweitgrößten ETF-Anbieter in Europa. Ein ETF ist ein börsennotierter Fonds, der einen Index abbildet, etwa den CAC 40.',
+        '2017 stärkte die Übernahme von Pioneer Investments für 3.545 Mio. € die Präsenz von Amundi in Nordamerika und Asien deutlich.'],
+        questions:[
+          { q:'Auf wie viele große Investmentplattformen stützt sich Amundi weltweit?', opts:['4','5','6','8'], ans:2 },
+          { q:'Welchen Rang belegt Amundi nach der Lyxor-Übernahme bei ETFs in Europa?', opts:['1.','2.','3.','4.'], ans:1 },
+          { q:'Wie viel zahlte Amundi 2017 für die Übernahme von Pioneer Investments?', opts:['1.200 Mio. €','2.890 Mio. €','3.545 Mio. €','5.000 Mio. €'], ans:2 },
+          { q:'In welcher Stadt liegt die nordamerikanische Investmentplattform von Amundi?', opts:['New York','Chicago','Boston','Toronto'], ans:2 } ] },
+      { name:'Strategie 2028', desc:'Plan „In die Zukunft investieren“', facts:[
+        'Der Strategieplan von Amundi, „In die Zukunft investieren“, läuft von 2025 bis 2028. Er ruht auf drei Säulen: Technologie, nachhaltige Geldanlage (verantwortungsvolles Investieren) und internationale Expansion.',
+        '2025 verzeichnete Amundi rekordhohe Nettozuflüsse von 88 Mrd. €. Nettozuflüsse sind die von Kunden anvertrauten Gelder abzüglich der Abflüsse.',
+        'Im ersten Quartal 2026 stieg der bereinigte Nettogewinn von Amundi (sein Gewinn) um 15 % gegenüber dem Vorjahr — über den Erwartungen der Analysten.'],
+        questions:[
+          { q:'Wie heißt der Strategieplan von Amundi für 2025-2028?', opts:['Gemeinsam wachsen 2025','In die Zukunft investieren','Wandel finanzieren','Digital zuerst 2028'], ans:1 },
+          { q:'Welche Rekord-Nettozuflüsse erreichte Amundi 2025?', opts:['45 Mrd. €','67 Mrd. €','88 Mrd. €','112 Mrd. €'], ans:2 },
+          { q:'Um wie viel stieg der bereinigte Nettogewinn von Amundi im 1. Quartal 2026?', opts:['+5 %','+10 %','+15 %','+22 %'], ans:2 } ] },
+      { name:'Globales Netzwerk', desc:'Internationale Präsenz', facts:[
+        'Amundi betreut über 200 Millionen Kunden in mehr als 35 Ländern auf fünf Kontinenten: vom Privatsparer bis zu den größten Staatsfonds der Welt.',
+        'Im Mai 2026 gliederte Amundi seine Aktivitäten in 5 globale Divisionen, um Vertriebseffizienz und Kundennähe zu steigern.',
+        'Amundi ist zudem mehrere internationale Partnerschaften (Joint Ventures) eingegangen: SBI Funds Management in Indien, NH-Amundi in Südkorea und ABC-CA in China.'],
+        questions:[
+          { q:'Wie viele Kunden betreut Amundi weltweit?', opts:['50 Mio.+','100 Mio.+','200 Mio.+','500 Mio.+'], ans:2 },
+          { q:'In wie viele globale Divisionen gliederte sich Amundi im Mai 2026?', opts:['3','4','5','7'], ans:2 },
+          { q:'Welches davon ist KEIN Partner (Joint Venture) von Amundi?', opts:['SBI Funds Management (Indien)','NH-Amundi (Südkorea)','HDFC AMC (Indien)','ABC-CA Fund Management (China)'], ans:2 } ] }
+    ]
+  },
+  // ===== ESPAÑOL =====
+  es: {
+    ui:{
+      explorer:'EXPLORADOR', subtitle:'Descubre la gestora de activos n.º 1 de Europa',
+      stats:'5 zonas · 19 preguntas · ~10 min',
+      start:'🚀  INICIAR LA EXPEDICIÓN',
+      soundOn:'🔊 sonido activado — mejor con sonido', soundOff:'🔇 sonido desactivado — toca el altavoz',
+      selectZone:'ELIGE TU ZONA', pts:'pts', zonesDone:'{n}/5 zonas exploradas',
+      questionsN:'{n} preguntas', enter:'▶ ENTRAR', featured:'★ DESTACADA',
+      factN:'Dato {i}/{n}', nextFact:'SIGUIENTE DATO  →', startQuiz:'🎯  EMPEZAR EL QUIZ',
+      qN:'P {i}/{n}', streakFire:'¡EN RACHA!', streakWord:'SEGUIDAS',
+      correct:'✅  ¡Correcto!  +100', streakSuffix:'   🔥 {n} seguidas', answerWas:'❌  Respuesta:  {a}',
+      cleared:'COMPLETADA', pointsEarned:'puntos ganados', correctOf:'{c}/{n} aciertos  ·  {p} %',
+      msgPerfect:'🏆 ¡Puntuación perfecta!', msgGreat:'🌟 ¡Excelente!', msgOk:'📚 ¡Sigue así!', msgLow:'💪 ¡Puedes mejorar!',
+      total:'Total', backMap:'🗺  VOLVER AL MAPA', seeFinal:'🏆  VER RESULTADO FINAL',
+      complete:'¡EXPEDICIÓN COMPLETADA!', finalScore:'Puntuación final: ⭐ {s} / {m}  ({p} %)',
+      rankLegend:'🥇 Leyenda de las finanzas', rankAnalyst:'🥈 Analista sénior', rankAssociate:'🥉 Analista júnior', rankObserver:'📊 Observador de mercados',
+      playAgain:'🔄  JUGAR DE NUEVO',
+      ticker:[' AMUN ▲ +2,4 % ',' PATRIMONIO 2.398 MIL M€ ',' N.º 1 EN EUROPA ',' ENTRADAS NETAS +88 MIL M€ ▲ ',' BENEFICIO AJUSTADO +15 % ▲ ',' +200 M CLIENTES ',' +35 PAÍSES ',' 6 PLATAFORMAS ',' INVERTIR EN EL FUTURO 2025–2028 '],
+      forum:'FORO MUNDIAL DE INVERSIÓN', stratPlan:'Plan estratégico'
+    },
+    zones:[
+      { name:'Sede Central', desc:'Historia e Hitos', facts:[
+        'Amundi nació el 1 de enero de 2010 de la fusión de dos gestoras de activos: Crédit Agricole Asset Management (CAAM) y Société Générale Asset Management (SGAM).',
+        'En marzo de 2026, Amundi gestiona 2.398 mil millones de euros de patrimonio (activos bajo gestión, AUM): el dinero que le confían sus clientes. Es la mayor gestora de activos de Europa y una de las diez mayores del mundo.',
+        'El Grupo Crédit Agricole posee el 68,35 % del capital de Amundi, del que es accionista de referencia (el propietario principal). La acción de Amundi cotiza en Euronext París con el símbolo «AMUN».'],
+        questions:[
+          { q:'¿Cuándo se creó Amundi?', opts:['1 de enero de 2010','15 de marzo de 2008','1 de enero de 2012','5 de octubre de 2014'], ans:0 },
+          { q:'¿Cuánto patrimonio (AUM) gestiona Amundi en marzo de 2026?', opts:['1.800 mil millones €','2.100 mil millones €','2.398 mil millones €','3.000 mil millones €'], ans:2 },
+          { q:'¿Qué porcentaje del capital de Amundi posee el Grupo Crédit Agricole?', opts:['45,2 %','68,35 %','51,0 %','82,7 %'], ans:1 },
+          { q:'¿Con qué símbolo cotiza Amundi en Euronext París?', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'Marketing y Productos', desc:'Distribución y marketing · ★ Destacada', facts:[
+        'La línea de negocio Marketing y Productos (M&P) comercializa los productos de Amundi en más de 22 países. Hace de puente entre la experiencia inversora y los clientes de todo el mundo.',
+        'Gilles Cutaya (49) dirige Marketing y Productos desde enero de 2025. Reporta a Céline Boyer-Chammard. Se incorporó a Amundi en 2015 y acompañó la reforma de la gobernanza de diciembre de 2024.',
+        'En Francia, Marketing y Productos no es un puñado de personas, sino varios equipos especializados: un COO y un Chief of Staff, un área de Content (French, Global, Digital), Business Intelligence y un área de Productos (French Products Implementation, Global Products, PRG).'],
+        questions:[
+          { q:'¿Quién dirige Marketing y Productos (M&P) desde enero de 2025?', opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
+          { q:'¿A quién reporta Gilles Cutaya?', opts:['Valérie Baudson (consejera delegada)','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+          { q:'¿Cuándo tuvo lugar la reforma de la gobernanza de Amundi?', opts:['Marzo de 2023','Junio de 2024','Diciembre de 2024','Enero de 2025'], ans:2 },
+          { q:'¿En cuántos países comercializa M&P sus productos?', opts:['+10 países','+15 países','+22 países','+30 países'], ans:2 },
+          { q:'¿Cómo se organiza el área M&P en Francia?', opts:['Un único equipo de unas 7 personas','Varios equipos especializados (COO, Content, Business Intelligence, Productos…)','Solo un equipo comercial','Un único gestor de carteras'], ans:1 } ] },
+      { name:'Centro de Inversión', desc:'Plataformas y experiencia', facts:[
+        'Amundi se apoya en 6 grandes plataformas de inversión en el mundo: París, Londres, Milán, Tokio, Boston y Dublín, lo que le da un alcance verdaderamente global.',
+        'Con la adquisición de Lyxor, Amundi se convirtió en el segundo proveedor de ETF de Europa. Un ETF es un fondo cotizado en bolsa que replica un índice, como el CAC 40.',
+        'En 2017, la adquisición de Pioneer Investments, por 3.545 millones de euros, reforzó notablemente la presencia de Amundi en Norteamérica y Asia.'],
+        questions:[
+          { q:'¿En cuántas grandes plataformas de inversión se apoya Amundi en el mundo?', opts:['4','5','6','8'], ans:2 },
+          { q:'Tras adquirir Lyxor, ¿qué puesto ocupa Amundi en ETF en Europa?', opts:['1.º','2.º','3.º','4.º'], ans:1 },
+          { q:'¿Cuánto pagó Amundi por adquirir Pioneer Investments en 2017?', opts:['1.200 M€','2.890 M€','3.545 M€','5.000 M€'], ans:2 },
+          { q:'¿En qué ciudad está la plataforma de inversión de Amundi en Norteamérica?', opts:['Nueva York','Chicago','Boston','Toronto'], ans:2 } ] },
+      { name:'Estrategia 2028', desc:'Plan «Invertir en el futuro»', facts:[
+        'El plan estratégico de Amundi, «Invertir en el futuro», abarca de 2025 a 2028. Se asienta en tres pilares: la tecnología, las finanzas sostenibles (la inversión responsable) y la expansión internacional.',
+        'En 2025, Amundi registró entradas netas récord de 88 mil millones de euros. Las entradas netas son el capital que confían los clientes, una vez descontados los reembolsos.',
+        'En el primer trimestre de 2026, el beneficio neto ajustado de Amundi (su beneficio) creció un 15 % interanual, por encima de las previsiones de los analistas.'],
+        questions:[
+          { q:'¿Cómo se llama el plan estratégico de Amundi para 2025-2028?', opts:['Crecer juntos 2025','Invertir en el futuro','Financiar el cambio','Digital primero 2028'], ans:1 },
+          { q:'¿Qué entradas netas récord alcanzó Amundi en 2025?', opts:['45 mil millones €','67 mil millones €','88 mil millones €','112 mil millones €'], ans:2 },
+          { q:'¿Cuánto creció el beneficio neto ajustado de Amundi en el 1.er trimestre de 2026?', opts:['+5 %','+10 %','+15 %','+22 %'], ans:2 } ] },
+      { name:'Red Mundial', desc:'Presencia internacional', facts:[
+        'Amundi atiende a más de 200 millones de clientes en más de 35 países de los cinco continentes: desde el pequeño ahorrador hasta los mayores fondos soberanos del mundo.',
+        'En mayo de 2026, Amundi reorganizó su actividad en 5 divisiones mundiales para ganar en eficiencia comercial y cercanía con el cliente.',
+        'Amundi también ha establecido varias alianzas internacionales (empresas conjuntas): SBI Funds Management en India, NH-Amundi en Corea del Sur y ABC-CA en China.'],
+        questions:[
+          { q:'¿A cuántos clientes atiende Amundi en el mundo?', opts:['+50 millones','+100 millones','+200 millones','+500 millones'], ans:2 },
+          { q:'En mayo de 2026, ¿en cuántas divisiones mundiales se reorganizó Amundi?', opts:['3','4','5','7'], ans:2 },
+          { q:'¿Cuál de estos NO es socio (empresa conjunta) de Amundi?', opts:['SBI Funds Management (India)','NH-Amundi (Corea del Sur)','HDFC AMC (India)','ABC-CA Fund Management (China)'], ans:2 } ] }
+    ]
+  },
+  // ===== ITALIANO =====
+  it: {
+    ui:{
+      explorer:'ESPLORATORE', subtitle:'Scopri il gestore patrimoniale n.1 d’Europa',
+      stats:'5 zone · 19 domande · ~10 min',
+      start:'🚀  INIZIA LA SPEDIZIONE',
+      soundOn:'🔊 audio attivo — meglio con l’audio', soundOff:'🔇 audio disattivato — tocca l’altoparlante',
+      selectZone:'SCEGLI LA TUA ZONA', pts:'pt', zonesDone:'{n}/5 zone esplorate',
+      questionsN:'{n} domande', enter:'▶ ENTRA', featured:'★ IN PRIMO PIANO',
+      factN:'Info {i}/{n}', nextFact:'PROSSIMA INFO  →', startQuiz:'🎯  INIZIA IL QUIZ',
+      qN:'D {i}/{n}', streakFire:'SCATENATO!', streakWord:'DI FILA',
+      correct:'✅  Esatto!  +100', streakSuffix:'   🔥 {n} di fila', answerWas:'❌  Risposta:  {a}',
+      cleared:'COMPLETATA', pointsEarned:'punti guadagnati', correctOf:'{c}/{n} corrette  ·  {p} %',
+      msgPerfect:'🏆 Punteggio perfetto!', msgGreat:'🌟 Eccellente!', msgOk:'📚 Continua così!', msgLow:'💪 Puoi migliorare!',
+      total:'Totale', backMap:'🗺  TORNA ALLA MAPPA', seeFinal:'🏆  VEDI RISULTATO FINALE',
+      complete:'SPEDIZIONE COMPLETATA!', finalScore:'Punteggio finale: ⭐ {s} / {m}  ({p} %)',
+      rankLegend:'🥇 Leggenda della finanza', rankAnalyst:'🥈 Analista senior', rankAssociate:'🥉 Analista junior', rankObserver:'📊 Osservatore dei mercati',
+      playAgain:'🔄  GIOCA ANCORA',
+      ticker:[' AMUN ▲ +2,4% ',' MASSE 2.398 Mld€ ',' N.1 IN EUROPA ',' RACCOLTA NETTA +88 Mld€ ▲ ',' UTILE NETTO RETT. +15% ▲ ',' +200 MLN CLIENTI ',' +35 PAESI ',' 6 PIATTAFORME ',' INVESTIRE PER IL FUTURO 2025–2028 '],
+      forum:'FORUM MONDIALE DEGLI INVESTIMENTI', stratPlan:'Piano strategico'
+    },
+    zones:[
+      { name:'Sede Centrale', desc:'Storia e Tappe', facts:[
+        'Amundi è nata il 1° gennaio 2010 dalla fusione di due società di gestione del risparmio: Crédit Agricole Asset Management (CAAM) e Société Générale Asset Management (SGAM).',
+        'A marzo 2026, Amundi gestisce 2.398 miliardi di euro di masse gestite (AUM), il denaro che i clienti le affidano. È il primo gestore patrimoniale d’Europa e uno dei dieci maggiori al mondo.',
+        'Il Gruppo Crédit Agricole detiene il 68,35% del capitale di Amundi, di cui è azionista di riferimento (il proprietario principale). L’azione Amundi è quotata su Euronext Parigi con il simbolo «AMUN».'],
+        questions:[
+          { q:'Quando è stata creata Amundi?', opts:['1° gennaio 2010','15 marzo 2008','1° gennaio 2012','5 ottobre 2014'], ans:0 },
+          { q:'Quante masse gestite (AUM) gestisce Amundi a marzo 2026?', opts:['1.800 miliardi €','2.100 miliardi €','2.398 miliardi €','3.000 miliardi €'], ans:2 },
+          { q:'Quale quota del capitale di Amundi detiene il Gruppo Crédit Agricole?', opts:['45,2%','68,35%','51,0%','82,7%'], ans:1 },
+          { q:'Con quale simbolo è quotata Amundi su Euronext Parigi?', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'Marketing e Prodotti', desc:'Distribuzione e marketing · ★ In primo piano', facts:[
+        'La linea di business Marketing e Prodotti (M&P) commercializza i prodotti di Amundi in oltre 22 Paesi. Fa da ponte tra l’expertise d’investimento e i clienti di tutto il mondo.',
+        'Gilles Cutaya (49) guida Marketing e Prodotti da gennaio 2025. Riporta a Céline Boyer-Chammard. È entrato in Amundi nel 2015 e ha accompagnato la riforma della governance del dicembre 2024.',
+        'In Francia, Marketing e Prodotti non è una manciata di persone, ma diversi team specializzati: un COO e un Chief of Staff, un’area Content (French, Global, Digital), Business Intelligence e un’area Prodotti (French Products Implementation, Global Products, PRG).'],
+        questions:[
+          { q:'Chi guida Marketing e Prodotti (M&P) da gennaio 2025?', opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
+          { q:'A chi riporta Gilles Cutaya?', opts:['Valérie Baudson (AD)','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+          { q:'Quando è avvenuta la riforma della governance di Amundi?', opts:['Marzo 2023','Giugno 2024','Dicembre 2024','Gennaio 2025'], ans:2 },
+          { q:'In quanti Paesi M&P commercializza i suoi prodotti?', opts:['+10 Paesi','+15 Paesi','+22 Paesi','+30 Paesi'], ans:2 },
+          { q:'Com’è organizzata l’area M&P in Francia?', opts:['Un solo team di circa 7 persone','Diversi team specializzati (COO, Content, Business Intelligence, Prodotti…)','Solo un team commerciale','Un solo gestore di portafoglio'], ans:1 } ] },
+      { name:'Polo Investimenti', desc:'Piattaforme ed expertise', facts:[
+        'Amundi si basa su 6 grandi piattaforme d’investimento nel mondo: Parigi, Londra, Milano, Tokyo, Boston e Dublino, per una portata davvero globale.',
+        'Con l’acquisizione di Lyxor, Amundi è diventata il secondo provider di ETF in Europa. Un ETF è un fondo quotato in borsa che replica un indice, come il CAC 40.',
+        'Nel 2017, l’acquisizione di Pioneer Investments, per 3.545 milioni di euro, ha rafforzato in modo significativo la presenza di Amundi in Nord America e in Asia.'],
+        questions:[
+          { q:'Su quante grandi piattaforme d’investimento si basa Amundi nel mondo?', opts:['4','5','6','8'], ans:2 },
+          { q:'Dopo l’acquisizione di Lyxor, in quale posizione è Amundi sugli ETF in Europa?', opts:['1ª','2ª','3ª','4ª'], ans:1 },
+          { q:'Quanto ha pagato Amundi per acquisire Pioneer Investments nel 2017?', opts:['1.200 mln €','2.890 mln €','3.545 mln €','5.000 mln €'], ans:2 },
+          { q:'In quale città si trova la piattaforma d’investimento di Amundi in Nord America?', opts:['New York','Chicago','Boston','Toronto'], ans:2 } ] },
+      { name:'Strategia 2028', desc:'Piano «Investire per il futuro»', facts:[
+        'Il piano strategico di Amundi, «Investire per il futuro», copre il periodo 2025-2028. Poggia su tre pilastri: tecnologia, finanza sostenibile (investimento responsabile) ed espansione internazionale.',
+        'Nel 2025, Amundi ha registrato una raccolta netta record di 88 miliardi di euro. La raccolta netta è il capitale affidato dai clienti, al netto dei riscatti.',
+        'Nel primo trimestre 2026, l’utile netto rettificato di Amundi (il suo utile) è cresciuto del 15% su base annua, oltre le attese degli analisti.'],
+        questions:[
+          { q:'Come si chiama il piano strategico di Amundi per il 2025-2028?', opts:['Crescere insieme 2025','Investire per il futuro','Finanziare il cambiamento','Digital First 2028'], ans:1 },
+          { q:'Quale raccolta netta record ha raggiunto Amundi nel 2025?', opts:['45 miliardi €','67 miliardi €','88 miliardi €','112 miliardi €'], ans:2 },
+          { q:'Di quanto è cresciuto l’utile netto rettificato di Amundi nel 1° trimestre 2026?', opts:['+5%','+10%','+15%','+22%'], ans:2 } ] },
+      { name:'Rete Globale', desc:'Presenza internazionale', facts:[
+        'Amundi serve oltre 200 milioni di clienti in più di 35 Paesi nei cinque continenti: dal piccolo risparmiatore ai maggiori fondi sovrani del mondo.',
+        'A maggio 2026, Amundi ha riorganizzato le attività in 5 divisioni globali per aumentare l’efficienza commerciale e la vicinanza ai clienti.',
+        'Amundi ha inoltre avviato diverse partnership internazionali (joint venture): SBI Funds Management in India, NH-Amundi in Corea del Sud e ABC-CA in Cina.'],
+        questions:[
+          { q:'Quanti clienti serve Amundi nel mondo?', opts:['+50 milioni','+100 milioni','+200 milioni','+500 milioni'], ans:2 },
+          { q:'A maggio 2026, in quante divisioni globali si è riorganizzata Amundi?', opts:['3','4','5','7'], ans:2 },
+          { q:'Quale di questi NON è un partner (joint venture) di Amundi?', opts:['SBI Funds Management (India)','NH-Amundi (Corea del Sud)','HDFC AMC (India)','ABC-CA Fund Management (Cina)'], ans:2 } ] }
+    ]
+  },
+  // ===== 日本語 =====
+  ja: {
+    ui:{
+      explorer:'エクスプローラー', subtitle:'欧州No.1の資産運用会社を探検しよう',
+      stats:'5ゾーン · 19問 · 約10分',
+      start:'🚀  探検をはじめる',
+      soundOn:'🔊 サウンドオン — 音ありがおすすめ', soundOff:'🔇 サウンドオフ — スピーカーをタップ',
+      selectZone:'ゾーンを選ぼう', pts:'点', zonesDone:'{n}/5 ゾーン踏破',
+      questionsN:'{n}問', enter:'▶ 入る', featured:'★ 注目',
+      factN:'豆知識 {i}/{n}', nextFact:'次の豆知識  →', startQuiz:'🎯  クイズをはじめる',
+      qN:'Q {i}/{n}', streakFire:'絶好調！', streakWord:'連続',
+      correct:'✅  正解！  +100', streakSuffix:'   🔥 {n}連続', answerWas:'❌  正解：  {a}',
+      cleared:'クリア', pointsEarned:'獲得ポイント', correctOf:'{c}/{n} 正解  ·  {p}%',
+      msgPerfect:'🏆 満点！', msgGreat:'🌟 すばらしい！', msgOk:'📚 その調子！', msgLow:'💪 まだ伸びしろあり！',
+      total:'合計', backMap:'🗺  マップに戻る', seeFinal:'🏆  最終結果を見る',
+      complete:'探検完了！', finalScore:'最終スコア: ⭐ {s} / {m}  ({p}%)',
+      rankLegend:'🥇 ファイナンスの伝説', rankAnalyst:'🥈 シニアアナリスト', rankAssociate:'🥉 ジュニアアソシエイト', rankObserver:'📊 マーケットウォッチャー',
+      playAgain:'🔄  もう一度',
+      ticker:[' AMUN ▲ +2.4% ',' 運用資産 23,980億€ ',' 欧州No.1 ',' 純資金流入 +880億€ ▲ ',' 調整後純利益 +15% ▲ ',' 顧客2億人超 ',' 35か国超 ',' 6拠点 ',' 未来への投資 2025–2028 '],
+      forum:'世界投資フォーラム', stratPlan:'戦略プラン'
+    },
+    zones:[
+      { name:'本社', desc:'歴史と歩み', facts:[
+        'アムンディは2010年1月1日、2つの資産運用会社、クレディ・アグリコル・アセットマネジメント（CAAM）とソシエテ・ジェネラル・アセットマネジメント（SGAM）の合併により誕生しました。',
+        '2026年3月時点で、アムンディは2兆3,980億ユーロ（顧客から預かる運用資産、AUM）を運用しています。欧州最大の資産運用会社であり、世界でも有数の規模です。',
+        'クレディ・アグリコル・グループはアムンディの資本の68.35%を保有する筆頭株主（主要なオーナー）です。アムンディ株はユーロネクスト・パリに「AMUN」のティッカーで上場しています。'],
+        questions:[
+          { q:'アムンディが設立されたのはいつですか？', opts:['2010年1月1日','2008年3月15日','2012年1月1日','2014年10月5日'], ans:0 },
+          { q:'2026年3月時点でアムンディの運用資産（AUM）はいくらですか？', opts:['1兆8,000億ユーロ','2兆1,000億ユーロ','2兆3,980億ユーロ','3兆ユーロ'], ans:2 },
+          { q:'クレディ・アグリコル・グループはアムンディの資本の何%を保有していますか？', opts:['45.2%','68.35%','51.0%','82.7%'], ans:1 },
+          { q:'アムンディはユーロネクスト・パリにどのティッカーで上場していますか？', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'マーケティング＆プロダクト', desc:'販売・マーケティング · ★ 注目', facts:[
+        'マーケティング＆プロダクト（M&P）部門は、アムンディの商品を22か国以上で販売しています。運用の専門性と世界中の顧客をつなぐ役割を担います。',
+        'ジル・キュタヤ（49歳）は2025年1月からマーケティング＆プロダクトを率い、セリーヌ・ボワイエ＝シャマールの直属です。2015年にアムンディへ入社し、2024年12月のガバナンス改革を担いました。',
+        'フランスのマーケティング＆プロダクトは数名のチームではなく、複数の専門チームで構成されます。COOとチーフ・オブ・スタッフ、Content部門（French・Global・Digital）、ビジネスインテリジェンス、そしてProducts部門（French Products Implementation・Global Products・PRG）です。'],
+        questions:[
+          { q:'2025年1月からマーケティング＆プロダクト（M&P）を率いるのは誰ですか？', opts:['ヴァレリー・ボードソン','ジル・キュタヤ','セリーヌ・ボワイエ＝シャマール','ジャン＝ジャック・バルベリス'], ans:1 },
+          { q:'ジル・キュタヤは誰の直属ですか？', opts:['ヴァレリー・ボードソン（CEO）','ジャン＝ジャック・バルベリス','セリーヌ・ボワイエ＝シャマール','ニコラ・カルコアン'], ans:2 },
+          { q:'アムンディのガバナンス改革が行われたのはいつですか？', opts:['2023年3月','2024年6月','2024年12月','2025年1月'], ans:2 },
+          { q:'M&Pは何か国で商品を販売していますか？', opts:['10か国以上','15か国以上','22か国以上','30か国以上'], ans:2 },
+          { q:'フランスのM&P部門はどのように組織されていますか？', opts:['約7名の単一チーム','複数の専門チーム（COO、Content、ビジネスインテリジェンス、Products など）','営業チームのみ','一人のポートフォリオマネジャー'], ans:1 } ] },
+      { name:'投資ハブ', desc:'プラットフォームと専門性', facts:[
+        'アムンディは世界6拠点の主要な投資プラットフォーム（パリ、ロンドン、ミラノ、東京、ボストン、ダブリン）を擁し、真にグローバルな対応力を備えています。',
+        'リクソー（Lyxor）の買収により、アムンディは欧州第2位のETFプロバイダーになりました。ETFとは、CAC 40などの指数に連動する上場投資信託です。',
+        '2017年のパイオニア・インベストメンツの買収（35億4,500万ユーロ）により、アムンディは北米とアジアでの存在感を大きく高めました。'],
+        questions:[
+          { q:'アムンディは世界でいくつの主要な投資プラットフォームを擁していますか？', opts:['4','5','6','8'], ans:2 },
+          { q:'リクソー買収後、アムンディは欧州のETFで何位ですか？', opts:['1位','2位','3位','4位'], ans:1 },
+          { q:'2017年、アムンディはパイオニア・インベストメンツをいくらで買収しましたか？', opts:['12億ユーロ','28億9,000万ユーロ','35億4,500万ユーロ','50億ユーロ'], ans:2 },
+          { q:'アムンディの北米の投資プラットフォームがある都市はどこですか？', opts:['ニューヨーク','シカゴ','ボストン','トロント'], ans:2 } ] },
+      { name:'戦略2028', desc:'「未来への投資」プラン', facts:[
+        'アムンディの戦略プラン「未来への投資」は2025～2028年を対象とし、テクノロジー、サステナブル・ファイナンス（責任投資）、国際展開の3本柱に基づいています。',
+        '2025年、アムンディは過去最高となる880億ユーロの純資金流入（ネット・インフロー）を記録しました。純資金流入とは、顧客が預けた資金から解約分を差し引いたものです。',
+        '2026年第1四半期、アムンディの調整後純利益（利益）は前年同期比15%増となり、アナリスト予想を上回りました。'],
+        questions:[
+          { q:'アムンディの2025～2028年の戦略プランの名称は？', opts:['ともに成長 2025','未来への投資','変革への投資','デジタル・ファースト 2028'], ans:1 },
+          { q:'2025年にアムンディが記録した過去最高の純資金流入は？', opts:['450億ユーロ','670億ユーロ','880億ユーロ','1,120億ユーロ'], ans:2 },
+          { q:'2026年第1四半期、アムンディの調整後純利益はどれだけ増えましたか？', opts:['+5%','+10%','+15%','+22%'], ans:2 } ] },
+      { name:'グローバル・ネットワーク', desc:'国際的なプレゼンス', facts:[
+        'アムンディは5大陸35か国以上で2億人を超える顧客にサービスを提供しています。個人の預金者から世界最大級のソブリン・ウェルス・ファンド（政府系ファンド）まで、その対象は多岐にわたります。',
+        '2026年5月、アムンディは事業を5つのグローバル部門に再編し、営業の効率と顧客対応力を高めました。',
+        'アムンディは国際的な提携（合弁会社）も結んでいます。インドのSBI Funds Management、韓国のNH-Amundi、中国のABC-CAです。'],
+        questions:[
+          { q:'アムンディは世界で何人の顧客にサービスを提供していますか？', opts:['5,000万人超','1億人超','2億人超','5億人超'], ans:2 },
+          { q:'2026年5月、アムンディはいくつのグローバル部門に再編しましたか？', opts:['3','4','5','7'], ans:2 },
+          { q:'次のうち、アムンディのパートナー（合弁会社）でないのはどれですか？', opts:['SBI Funds Management（インド）','NH-Amundi（韓国）','HDFC AMC（インド）','ABC-CA Fund Management（中国）'], ans:2 } ] }
+    ]
+  },
+  // ===== 廣東話（香港・繁體）=====
+  yue: {
+    ui:{
+      explorer:'探索者', subtitle:'探索歐洲第一嘅資產管理公司',
+      stats:'5 個區域 · 19 條題 · 約 10 分鐘',
+      start:'🚀  開始探索',
+      soundOn:'🔊 聲音已開 — 建議開聲體驗', soundOff:'🔇 聲音已關 — 㩒一下喇叭開返',
+      selectZone:'揀選你嘅區域', pts:'分', zonesDone:'已探索 {n}/5 區',
+      questionsN:'{n} 條題', enter:'▶ 進入', featured:'★ 精選',
+      factN:'資訊 {i}/{n}', nextFact:'下一條  →', startQuiz:'🎯  開始問答',
+      qN:'第 {i}/{n} 題', streakFire:'勢不可擋！', streakWord:'連勝',
+      correct:'✅  答啱！  +100', streakSuffix:'   🔥 連續 {n} 條', answerWas:'❌  答案：  {a}',
+      cleared:'完成', pointsEarned:'獲得分數', correctOf:'{c}/{n} 答啱  ·  {p}%',
+      msgPerfect:'🏆 滿分！', msgGreat:'🌟 非常出色！', msgOk:'📚 繼續努力！', msgLow:'💪 仲有進步空間！',
+      total:'總分', backMap:'🗺  返回地圖', seeFinal:'🏆  查看最終成績',
+      complete:'探索完成！', finalScore:'最終分數: ⭐ {s} / {m}  ({p}%)',
+      rankLegend:'🥇 金融傳奇', rankAnalyst:'🥈 資深分析師', rankAssociate:'🥉 初級分析師', rankObserver:'📊 市場觀察者',
+      playAgain:'🔄  再玩一次',
+      ticker:[' AMUN ▲ +2.4% ',' 管理資產 23,980 億€ ',' 歐洲第一 ',' 淨流入 +880 億€ ▲ ',' 經調整純利 +15% ▲ ',' 客戶逾 2 億 ',' 逾 35 國 ',' 6 個平台 ',' 投資未來 2025–2028 '],
+      forum:'世界投資論壇', stratPlan:'策略計劃'
+    },
+    zones:[
+      { name:'總部', desc:'歷史與里程碑', facts:[
+        'Amundi 於 2010 年 1 月 1 日，由兩間資產管理公司——法國農業信貸資產管理（CAAM）同法國興業資產管理（SGAM）——合併而成。',
+        '截至 2026 年 3 月，Amundi 管理 23,980 億歐元資產（即客戶委託嘅管理資產，AUM），係歐洲最大嘅資產管理公司，亦係全球十大之一。',
+        '法國農業信貸集團持有 Amundi 68.35% 股本，係主要股東（大股東）。Amundi 股份喺巴黎泛歐交易所上市，股份代號為「AMUN」。'],
+        questions:[
+          { q:'Amundi 喺幾時成立？', opts:['2010 年 1 月 1 日','2008 年 3 月 15 日','2012 年 1 月 1 日','2014 年 10 月 5 日'], ans:0 },
+          { q:'截至 2026 年 3 月，Amundi 管理幾多資產（AUM）？', opts:['18,000 億歐元','21,000 億歐元','23,980 億歐元','30,000 億歐元'], ans:2 },
+          { q:'法國農業信貸集團持有 Amundi 幾多股本？', opts:['45.2%','68.35%','51.0%','82.7%'], ans:1 },
+          { q:'Amundi 喺巴黎泛歐交易所嘅股份代號係咩？', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'市場推廣與產品', desc:'分銷與市場推廣 · ★ 精選', facts:[
+        '市場推廣與產品（M&P）業務線喺超過 22 個國家推廣 Amundi 嘅產品，係投資專業同全球客戶之間嘅橋樑。',
+        'Gilles Cutaya（49 歲）自 2025 年 1 月起領導市場推廣與產品，向 Céline Boyer-Chammard 匯報。佢 2015 年加入 Amundi，並參與咗 2024 年 12 月嘅管治架構改革。',
+        '喺法國，市場推廣與產品唔係得幾個人，而係由多個專責團隊組成：一位 COO 同一位 Chief of Staff、Content 組（French、Global、Digital）、Business Intelligence，以及 Products 組（French Products Implementation、Global Products、PRG）。'],
+        questions:[
+          { q:'邊個自 2025 年 1 月起領導市場推廣與產品（M&P）？', opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
+          { q:'Gilles Cutaya 向邊位匯報？', opts:['Valérie Baudson（行政總裁）','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+          { q:'Amundi 嘅管治架構改革喺幾時進行？', opts:['2023 年 3 月','2024 年 6 月','2024 年 12 月','2025 年 1 月'], ans:2 },
+          { q:'M&P 喺幾多個國家推廣產品？', opts:['超過 10 個','超過 15 個','超過 22 個','超過 30 個'], ans:2 },
+          { q:'喺法國，M&P 部門係點樣組織？', opts:['只係一個約 7 人嘅團隊','多個專責團隊（COO、Content、Business Intelligence、Products 等）','只係一個銷售團隊','只係一位基金經理'], ans:1 } ] },
+      { name:'投資樞紐', desc:'平台與專業', facts:[
+        'Amundi 喺全球設有 6 大投資平台：巴黎、倫敦、米蘭、東京、波士頓同都柏林，確保真正嘅全球執行能力。',
+        '收購 Lyxor 之後，Amundi 成為歐洲第二大 ETF 供應商。ETF 係一種喺交易所上市、追蹤指數（例如 CAC 40）嘅基金。',
+        '2017 年，Amundi 以 35 億 4,500 萬歐元收購 Pioneer Investments，大幅加強咗喺北美同亞洲嘅業務。'],
+        questions:[
+          { q:'Amundi 喺全球設有幾多個大型投資平台？', opts:['4','5','6','8'], ans:2 },
+          { q:'收購 Lyxor 後，Amundi 喺歐洲 ETF 排第幾？', opts:['第 1','第 2','第 3','第 4'], ans:1 },
+          { q:'2017 年 Amundi 以幾多收購 Pioneer Investments？', opts:['12 億歐元','28 億 9,000 萬歐元','35 億 4,500 萬歐元','50 億歐元'], ans:2 },
+          { q:'Amundi 喺北美嘅投資平台位於邊個城市？', opts:['紐約','芝加哥','波士頓','多倫多'], ans:2 } ] },
+      { name:'2028 策略', desc:'「投資未來」計劃', facts:[
+        'Amundi 嘅策略計劃「投資未來」涵蓋 2025 至 2028 年，建基於三大支柱：科技、可持續金融（責任投資）同國際擴張。',
+        '2025 年，Amundi 錄得創紀錄嘅 880 億歐元淨流入。淨流入係指客戶委託嘅資金扣除贖回之後嘅淨額。',
+        '2026 年第一季，Amundi 嘅經調整純利按年上升 15%，高於分析師預期。'],
+        questions:[
+          { q:'Amundi 2025 至 2028 年嘅策略計劃叫咩名？', opts:['攜手成長 2025','投資未來','為改變融資','數碼優先 2028'], ans:1 },
+          { q:'2025 年 Amundi 錄得幾多創紀錄淨流入？', opts:['450 億歐元','670 億歐元','880 億歐元','1,120 億歐元'], ans:2 },
+          { q:'2026 年第一季，Amundi 嘅經調整純利上升幾多？', opts:['+5%','+10%','+15%','+22%'], ans:2 } ] },
+      { name:'全球網絡', desc:'國際業務', facts:[
+        'Amundi 喺五大洲、超過 35 個國家為逾 2 億名客戶服務，由普通儲蓄者到全球最大嘅主權財富基金都有。',
+        '2026 年 5 月，Amundi 將業務重組為 5 個全球部門，以提升商業效率同對客戶嘅反應速度。',
+        'Amundi 亦成立咗多個國際合作（合資企業）：印度嘅 SBI Funds Management、南韓嘅 NH-Amundi，以及中國嘅 ABC-CA。'],
+        questions:[
+          { q:'Amundi 喺全球為幾多客戶服務？', opts:['逾 5,000 萬','逾 1 億','逾 2 億','逾 5 億'], ans:2 },
+          { q:'2026 年 5 月，Amundi 重組為幾多個全球部門？', opts:['3','4','5','7'], ans:2 },
+          { q:'以下邊個唔係 Amundi 嘅合作夥伴（合資企業）？', opts:['SBI Funds Management（印度）','NH-Amundi（南韓）','HDFC AMC（印度）','ABC-CA Fund Management（中國）'], ans:2 } ] }
+    ]
+  },
+  // ===== 华语（新加坡・简体）=====
+  zh: {
+    ui:{
+      explorer:'探索者', subtitle:'探索欧洲第一的资产管理公司',
+      stats:'5 个区域 · 19 道题 · 约 10 分钟',
+      start:'🚀  开始探索',
+      soundOn:'🔊 已开启声音 — 建议开声体验', soundOff:'🔇 已关闭声音 — 点按喇叭开启',
+      selectZone:'选择你的区域', pts:'分', zonesDone:'已探索 {n}/5 区',
+      questionsN:'{n} 道题', enter:'▶ 进入', featured:'★ 精选',
+      factN:'资讯 {i}/{n}', nextFact:'下一则  →', startQuiz:'🎯  开始问答',
+      qN:'第 {i}/{n} 题', streakFire:'势不可挡！', streakWord:'连胜',
+      correct:'✅  答对了！  +100', streakSuffix:'   🔥 连续 {n} 题', answerWas:'❌  答案：  {a}',
+      cleared:'完成', pointsEarned:'获得分数', correctOf:'{c}/{n} 答对  ·  {p}%',
+      msgPerfect:'🏆 满分！', msgGreat:'🌟 非常出色！', msgOk:'📚 继续加油！', msgLow:'💪 还有进步空间！',
+      total:'总分', backMap:'🗺  返回地图', seeFinal:'🏆  查看最终成绩',
+      complete:'探索完成！', finalScore:'最终分数: ⭐ {s} / {m}  ({p}%)',
+      rankLegend:'🥇 金融传奇', rankAnalyst:'🥈 资深分析师', rankAssociate:'🥉 初级分析师', rankObserver:'📊 市场观察者',
+      playAgain:'🔄  再玩一次',
+      ticker:[' AMUN ▲ +2.4% ',' 管理资产 23,980 亿€ ',' 欧洲第一 ',' 净流入 +880 亿€ ▲ ',' 经调整净利 +15% ▲ ',' 客户逾 2 亿 ',' 逾 35 国 ',' 6 个平台 ',' 投资未来 2025–2028 '],
+      forum:'世界投资论坛', stratPlan:'策略计划'
+    },
+    zones:[
+      { name:'总部', desc:'历史与里程碑', facts:[
+        'Amundi 于 2010 年 1 月 1 日，由两家资产管理公司——法国农业信贷资产管理（CAAM）与法国兴业资产管理（SGAM）——合并而成。',
+        '截至 2026 年 3 月，Amundi 管理 23,980 亿欧元资产（即客户委托的管理资产，AUM），是欧洲最大的资产管理公司，也是全球十大之一。',
+        '法国农业信贷集团持有 Amundi 68.35% 股本，是主要股东（大股东）。Amundi 在巴黎泛欧交易所上市，股票代码为「AMUN」。'],
+        questions:[
+          { q:'Amundi 在何时成立？', opts:['2010 年 1 月 1 日','2008 年 3 月 15 日','2012 年 1 月 1 日','2014 年 10 月 5 日'], ans:0 },
+          { q:'截至 2026 年 3 月，Amundi 管理多少资产（AUM）？', opts:['18,000 亿欧元','21,000 亿欧元','23,980 亿欧元','30,000 亿欧元'], ans:2 },
+          { q:'法国农业信贷集团持有 Amundi 多少股本？', opts:['45.2%','68.35%','51.0%','82.7%'], ans:1 },
+          { q:'Amundi 在巴黎泛欧交易所的股票代码是什么？', opts:['AMUN','AMU','AMDI','AMGE'], ans:0 } ] },
+      { name:'市场营销与产品', desc:'分销与营销 · ★ 精选', facts:[
+        '市场营销与产品（M&P）业务线在超过 22 个国家推广 Amundi 的产品，是投资专业与全球客户之间的桥梁。',
+        'Gilles Cutaya（49 岁）自 2025 年 1 月起领导市场营销与产品，向 Céline Boyer-Chammard 汇报。他于 2015 年加入 Amundi，并参与了 2024 年 12 月的治理架构改革。',
+        '在法国，市场营销与产品并非只有几个人，而是由多个专责团队组成：一位 COO 和一位 Chief of Staff、Content 组（French、Global、Digital）、Business Intelligence，以及 Products 组（French Products Implementation、Global Products、PRG）。'],
+        questions:[
+          { q:'谁自 2025 年 1 月起领导市场营销与产品（M&P）？', opts:['Valérie Baudson','Gilles Cutaya','Céline Boyer-Chammard','Jean-Jacques Barbéris'], ans:1 },
+          { q:'Gilles Cutaya 向谁汇报？', opts:['Valérie Baudson（首席执行官）','Jean-Jacques Barbéris','Céline Boyer-Chammard','Nicolas Calcoen'], ans:2 },
+          { q:'Amundi 的治理架构改革在何时进行？', opts:['2023 年 3 月','2024 年 6 月','2024 年 12 月','2025 年 1 月'], ans:2 },
+          { q:'M&P 在多少个国家推广产品？', opts:['超过 10 个','超过 15 个','超过 22 个','超过 30 个'], ans:2 },
+          { q:'在法国，M&P 部门是如何组织的？', opts:['只有一个约 7 人的团队','多个专责团队（COO、Content、Business Intelligence、Products 等）','只有一个销售团队','只有一位基金经理'], ans:1 } ] },
+      { name:'投资枢纽', desc:'平台与专业', facts:[
+        'Amundi 在全球设有 6 大投资平台：巴黎、伦敦、米兰、东京、波士顿和都柏林，确保真正的全球执行能力。',
+        '收购 Lyxor 之后，Amundi 成为欧洲第二大 ETF 供应商。ETF 是一种在交易所上市、追踪指数（例如 CAC 40）的基金。',
+        '2017 年，Amundi 以 35 亿 4,500 万欧元收购 Pioneer Investments，大幅加强了在北美和亚洲的业务。'],
+        questions:[
+          { q:'Amundi 在全球设有多少个大型投资平台？', opts:['4','5','6','8'], ans:2 },
+          { q:'收购 Lyxor 后，Amundi 在欧洲 ETF 排第几？', opts:['第 1','第 2','第 3','第 4'], ans:1 },
+          { q:'2017 年 Amundi 以多少收购 Pioneer Investments？', opts:['12 亿欧元','28 亿 9,000 万欧元','35 亿 4,500 万欧元','50 亿欧元'], ans:2 },
+          { q:'Amundi 在北美的投资平台位于哪个城市？', opts:['纽约','芝加哥','波士顿','多伦多'], ans:2 } ] },
+      { name:'2028 策略', desc:'「投资未来」计划', facts:[
+        'Amundi 的策略计划「投资未来」涵盖 2025 至 2028 年，建立在三大支柱上：科技、可持续金融（责任投资）和国际扩张。',
+        '2025 年，Amundi 录得创纪录的 880 亿欧元净流入。净流入是指客户委托的资金扣除赎回后的净额。',
+        '2026 年第一季度，Amundi 的经调整净利同比增长 15%，高于分析师预期。'],
+        questions:[
+          { q:'Amundi 2025 至 2028 年的策略计划叫什么名字？', opts:['携手成长 2025','投资未来','为改变融资','数码优先 2028'], ans:1 },
+          { q:'2025 年 Amundi 录得多少创纪录净流入？', opts:['450 亿欧元','670 亿欧元','880 亿欧元','1,120 亿欧元'], ans:2 },
+          { q:'2026 年第一季度，Amundi 的经调整净利增长多少？', opts:['+5%','+10%','+15%','+22%'], ans:2 } ] },
+      { name:'全球网络', desc:'国际业务', facts:[
+        'Amundi 在五大洲、超过 35 个国家为逾 2 亿名客户服务，从普通储蓄者到全球最大的主权财富基金都有。',
+        '2026 年 5 月，Amundi 将业务重组为 5 个全球部门，以提升商业效率和对客户的反应速度。',
+        'Amundi 也成立了多个国际合作（合资企业）：印度的 SBI Funds Management、韩国的 NH-Amundi，以及中国的 ABC-CA。'],
+        questions:[
+          { q:'Amundi 在全球为多少客户服务？', opts:['逾 5,000 万','逾 1 亿','逾 2 亿','逾 5 亿'], ans:2 },
+          { q:'2026 年 5 月，Amundi 重组为多少个全球部门？', opts:['3','4','5','7'], ans:2 },
+          { q:'以下哪个不是 Amundi 的合作伙伴（合资企业）？', opts:['SBI Funds Management（印度）','NH-Amundi（韩国）','HDFC AMC（印度）','ABC-CA Fund Management（中国）'], ans:2 } ] }
+    ]
+  }
+};
 
-const MAX_SCORE = ZONES.reduce((s,z)=>s+z.questions.length*100,0); // 1900
+let ZONES, MAX_SCORE;
+function buildZones(){
+  const B = (I18N[LANG]||I18N.en).zones;
+  ZONES = ZONE_META.map((m,i)=> Object.assign({}, m, B[i]));
+  MAX_SCORE = ZONES.reduce((s,z)=>s+z.questions.length*100,0);  // 1900 (identical across languages)
+}
+buildZones();
 
 // warm the emoji cache (zone icons + all UI emoji)
-EMO.preload(ZONES.map(z=>z.emoji).concat(
+EMO.preload(ZONE_META.map(z=>z.emoji).concat(
   ['💡','🏆','🚀','🗺','🔄','⭐','✅','❌','🔥','🔊','🔇','💪','📚','🌟','🥇','🥈','🥉','🎯','🎉']));
 
 // ── Background particles (twinkling, glowing) ─────────────────
@@ -588,9 +1129,7 @@ function drawRays(t,cx,cy,color,count,maxR){
 }
 
 // ── Thematic scrolling stock-ticker tape (terminal twist) ────
-const TICKER=[' AMUN ▲ +2,4 % ',' ENCOURS 2 398 Md€ ',' N°1 EN EUROPE ',' COLLECTE NETTE +88 Md€ ▲ ',
-  ' BÉNÉFICE +15 % ▲ ',' +200 M DE CLIENTS ',' +35 PAYS ',' 6 CENTRES ',
-  ' INVESTIR POUR L’AVENIR 2025–2028 '];
+// ticker tokens are per-language → U.ticker
 function drawTicker(t,color){
   const bh=u(0.038), by=H()-bh;
   ctx.save();
@@ -599,7 +1138,7 @@ function drawTicker(t,color){
   ctx.beginPath(); ctx.moveTo(0,by); ctx.lineTo(W(),by); ctx.stroke();
   ctx.font=`bold ${u(0.02)}px monospace`; ctx.textBaseline='middle'; ctx.textAlign='left';
   ctx.fillStyle=color;
-  const str=TICKER.join('   ◆   ')+'   ◆   ';
+  const str=(U.ticker).join('   ◆   ')+'   ◆   ';
   const w=ctx.measureText(str).width, x=-((t/24)%w);
   etext(str,x,by+bh/2); etext(str,x+w,by+bh/2);
   ctx.restore();
@@ -697,7 +1236,7 @@ function sceneForum(x,y,w,h,t,quiet){
   if(!quiet){
     ctx.fillStyle='#eaf3ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font=`bold ${Math.round(h*0.07)}px sans-serif`; etext('Amundi',cx,cy-h*0.03);
-    ctx.font=`${Math.round(h*0.026)}px sans-serif`; etext('FORUM MONDIAL DE L’INVESTISSEMENT',cx,cy+h*0.05);
+    ctx.font=`${Math.round(h*0.026)}px sans-serif`; etext(U.forum,cx,cy+h*0.05);
   }
   ctx.fillStyle='#0b1f44'; ctx.beginPath(); ctx.ellipse(cx,y+h*0.78,w*0.4,h*0.1,0,0,6.28); ctx.fill();
   ctx.fillStyle='#02060f';
@@ -742,7 +1281,7 @@ function sceneCube(x,y,w,h,t){
   isoCube(x+w*0.27, y+h*0.5, Math.min(w,h)*0.2, '#5b9bd5','#3f7fb0','#2e6090');
   ctx.fillStyle='#eaf3ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font=`bold ${Math.round(h*0.075)}px sans-serif`; etext('2028',x+w*0.27,y+h*0.47);
-  ctx.font=`${Math.round(h*0.03)}px sans-serif`; etext('Plan stratégique',x+w*0.27,y+h*0.56);
+  ctx.font=`${Math.round(h*0.03)}px sans-serif`; etext(U.stratPlan,x+w*0.27,y+h*0.56);
 }
 // 5) Subsidiary / partner logo wall (image 5)
 function scenePartners(x,y,w,h,t){
@@ -1058,14 +1597,14 @@ function drawIntro(t){
     ctx.shadowBlur=0;
     ctx.font=`200 ${u(0.072)}px sans-serif`; ctx.fillStyle='#80DEEA';
     try{ctx.letterSpacing=u(0.02)+'px';}catch(e){}
-    etext('EXPLORATEUR',W()/2,H()*0.325+bob);
+    etext(U.explorer,W()/2,H()*0.325+bob);
     try{ctx.letterSpacing='0px';}catch(e){}
   });
 
   withEntry(age,150,600,()=>{
     ctx.font=`${u(0.032)}px sans-serif`; ctx.fillStyle='#CFD8DC';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    etext('Découvre le n°1 de la gestion d’actifs en Europe',W()/2,H()*0.44);
+    etext(U.subtitle,W()/2,H()*0.44);
   });
 
   // zone pills (staggered, hover-bob) — wider, more spaced, auto-fit text
@@ -1093,13 +1632,13 @@ function drawIntro(t){
   withEntry(age,650,500,()=>{
     ctx.font=`${u(0.027)}px sans-serif`; ctx.fillStyle='#B0BEC5';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    etext('5 zones  ·  19 questions  ·  ~10 minutes',W()/2,H()*0.645);
+    etext(U.stats,W()/2,H()*0.645);
   });
 
   // start button (accurate hit-area via fadeIn only)
   const bW=u(0.5),bH=u(0.1),bX=(W()-bW)/2,bY=H()*0.73;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,780,500);
-  const clicked=drawButton('start',bX,bY,bW,bH,'🚀  COMMENCER L’EXPÉDITION',
+  const clicked=drawButton('start',bX,bY,bW,bH,U.start,
     {grad:['#00E5FF','#26C6DA','#FFB300'],glow:'#00E5FF',color:'#04121b',
      font:`bold ${u(0.044)}px sans-serif`,silent:true});
   ctx.restore();
@@ -1110,8 +1649,7 @@ function drawIntro(t){
   ctx.font=`${u(0.022)}px sans-serif`; ctx.fillStyle='#A7BCC9';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.globalAlpha=0.55+0.35*Math.sin(t/500);
-  etext(SFX.muted?'🔇 son coupé — touche le haut-parleur pour l’activer'
-                         :'🔊 son activé — à écouter avec le son',W()/2,H()*0.86);
+  etext(SFX.muted?U.soundOff:U.soundOn,W()/2,H()*0.86);
   ctx.restore();
 }
 
@@ -1125,13 +1663,13 @@ function drawMap(t){
     ctx.font=`bold ${u(0.05)}px sans-serif`; ctx.fillStyle='#E0F7FA';
     ctx.textAlign='center'; ctx.textBaseline='top';
     try{ctx.letterSpacing=u(0.006)+'px';}catch(e){}
-    etext('CHOISIS TA ZONE',W()/2,u(0.028));
+    etext(U.selectZone,W()/2,u(0.028));
     try{ctx.letterSpacing='0px';}catch(e){}
     ctx.font=`${u(0.03)}px sans-serif`;
     ctx.fillStyle='#FFB300'; ctx.textAlign='right';
-    etext(`⭐ ${GS.totalScore} pts`,W()-u(0.025),u(0.094));
+    etext(`⭐ ${GS.totalScore} ${U.pts}`,W()-u(0.025),u(0.094));
     ctx.fillStyle='#B0BEC5'; ctx.textAlign='left';
-    etext(`${GS.done.size}/5 zones explorées`,u(0.025),u(0.094));
+    etext(tpl(U.zonesDone,{n:GS.done.size}),u(0.025),u(0.094));
   });
 
   const mg=u(0.022), cH=u(0.3), row0Y=H()*0.16, row1Y=H()*0.575;
@@ -1169,11 +1707,11 @@ function drawMap(t){
       etext(z.desc,cx+cW/2,cy+cH*0.67);
       ctx.font=`bold ${u(0.022)}px sans-serif`;
       if(isDone){ ctx.fillStyle='#69F0AE'; etext(`✓  ${GS.zoneScore[z.id]||0} pts`,cx+cW/2,cy+cH*0.81); }
-      else { ctx.fillStyle='#ECEFF1'; etext(`${z.questions.length} questions`,cx+cW/2,cy+cH*0.81); }
+      else { ctx.fillStyle='#ECEFF1'; etext(tpl(U.questionsN,{n:z.questions.length}),cx+cW/2,cy+cH*0.81); }
       ctx.restore();
       if(!isDone && k>0.05){
         ctx.globalAlpha*=k; ctx.fillStyle=z.accent; ctx.font=`bold ${u(0.02)}px sans-serif`;
-        etext('▶ ENTRER',cx+cW/2,cy+cH*0.92);
+        etext(U.enter,cx+cW/2,cy+cH*0.92);
       }
       if(z.featured&&!isDone){
         ctx.globalAlpha=1;
@@ -1183,7 +1721,7 @@ function drawMap(t){
         ctx.shadowColor='#FFB300'; ctx.shadowBlur=u(0.02)*bp; ctx.fill(); ctx.shadowBlur=0;
         ctx.font=`bold ${u(0.02)}px sans-serif`; ctx.fillStyle='#071018';
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        etext('★ À LA UNE',bx+bw/2,by+bh/2);
+        etext(U.featured,bx+bw/2,by+bh/2);
       }
       ctx.restore();
       if(!isDone && hit(cx,cy,cW,cH) && !TR.active){ prepZone(i); goto('fact',{color:z.color}); }
@@ -1209,7 +1747,7 @@ function drawFact(t){
     ctx.font=`bold ${u(0.044)}px sans-serif`; ctx.fillStyle='#fff';
     etext(z.name,u(0.11),barH/2);
     ctx.textAlign='right'; ctx.font=`${u(0.028)}px sans-serif`; ctx.fillStyle=z.accent;
-    etext(`Info ${GS.factIdx+1}/${z.facts.length}`,W()-u(0.025),barH/2);
+    etext(tpl(U.factN,{i:GS.factIdx+1,n:z.facts.length}),W()-u(0.025),barH*0.72);
   });
 
   const padX=u(0.05), cW=W()-padX*2;
@@ -1257,7 +1795,7 @@ function drawFact(t){
   const bW=u(0.48),bH=u(0.088),bX=(W()-bW)/2,bY=H()*0.81;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,260,400);
   const clicked=drawButton('factnav',bX,bY,bW,bH,
-    isLast?'🎯  COMMENCER LE QUIZ':'INFO SUIVANTE  →',
+    isLast?U.startQuiz:U.nextFact,
     isLast?{grad:['#00E5FF','#FFB300'],glow:'#00E5FF',color:'#04121b'}
           :{fill:z.color,glow:z.accent,color:'#fff'});
   ctx.restore();
@@ -1285,7 +1823,7 @@ function drawQuiz(t){
   ctx.textAlign='left'; ctx.textBaseline='middle';
   etext(z.emoji+'  '+z.name,u(0.025),barH/2);
   ctx.fillStyle=z.accent; ctx.textAlign='right';
-  etext(`Q ${GS.qIdx+1}/${z.questions.length}`,W()-u(0.025),barH/2);
+  etext(tpl(U.qN,{i:GS.qIdx+1,n:z.questions.length}),W()-u(0.025),barH*0.74);
   // score (bumps when coins land) + combo
   ctx.save();
   const spz=1+0.4*scorePulse;
@@ -1302,7 +1840,7 @@ function drawQuiz(t){
     ctx.fillStyle=fire?'#FF7043':'#FF8A65';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     if(fire){ ctx.shadowColor='#FF5722'; ctx.shadowBlur=u(0.022*(0.6+0.4*Math.sin(t/120))); }
-    etext(`🔥 ${GS.streak}${fire?' EN FEU !':' DE SUITE'}`,W()/2,barH*0.84);
+    etext(`🔥 ${GS.streak} ${fire?U.streakFire:U.streakWord}`,W()/2,barH*0.84);
     ctx.restore();
     if(fire && Math.random()<0.5) ember(W()/2+(Math.random()-0.5)*u(0.24),barH*0.86);
   }
@@ -1425,8 +1963,8 @@ function drawQuiz(t){
     ctx.font=`bold ${u(0.028)}px sans-serif`; ctx.fillStyle='#fff';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const msg=GS.fbCorrect
-      ? `✅  Bravo !  +100${GS.streak>1?'   🔥 '+GS.streak+' de suite':''}`
-      : `❌  Réponse :  ${q.opts[q.ans]}`;
+      ? U.correct + (GS.streak>1 ? tpl(U.streakSuffix,{n:GS.streak}) : '')
+      : tpl(U.answerWas,{a:q.opts[q.ans]});
     etext(msg,W()/2,fbY+fbH/2);
     ctx.restore();
   }
@@ -1458,7 +1996,7 @@ function drawZResult(t){
   ctx.font=`900 ${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.03);
-  etext(z.name.toUpperCase()+'  TERMINÉE',0,0);
+  etext(z.name.toUpperCase()+'  '+U.cleared,0,0);
   ctx.restore();
 
   const cX=u(0.07), cY=H()*0.19, cW=W()-u(0.14), cH=H()*0.46;
@@ -1483,11 +2021,11 @@ function drawZResult(t){
   ctx.shadowColor=z.accent; ctx.shadowBlur=u(0.03);
   etext(`+${shown}`,W()/2,cY+cH*0.46); ctx.shadowBlur=0;
   ctx.font=`${u(0.03)}px sans-serif`; ctx.fillStyle='#CFD8DC';
-  etext('points gagnés',W()/2,cY+cH*0.61);
+  etext(U.pointsEarned,W()/2,cY+cH*0.61);
   ctx.font=`bold ${u(0.034)}px sans-serif`;
   ctx.fillStyle=pct>=70?'#69F0AE':pct>=40?'#FFB300':'#FF8A80';
-  etext(`${GS.lastZoneCorrect}/${z.questions.length} bonnes réponses  ·  ${pct} %`,W()/2,cY+cH*0.75);
-  const msg=pct===100?'🏆 Score parfait !':pct>=70?'🌟 Excellent !':pct>=40?'📚 Continue !':'💪 Tu peux progresser !';
+  etext(tpl(U.correctOf,{c:GS.lastZoneCorrect,n:z.questions.length,p:pct}),W()/2,cY+cH*0.75);
+  const msg=pct===100?U.msgPerfect:pct>=70?U.msgGreat:pct>=40?U.msgOk:U.msgLow;
   ctx.font=`${u(0.032)}px sans-serif`; ctx.fillStyle='#E0F7FA';
   etext(msg,W()/2,cY+cH*0.88);
   ctx.restore();
@@ -1495,14 +2033,14 @@ function drawZResult(t){
   ctx.save(); ctx.globalAlpha*=fadeIn(age,400,400);
   ctx.font=`${u(0.03)}px sans-serif`; ctx.fillStyle='#FFB300';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  etext(`Total  ⭐ ${GS.totalScore} / ${MAX_SCORE}`,W()/2,H()*0.71);
+  etext(`${U.total}  ⭐ ${GS.totalScore} / ${MAX_SCORE}`,W()/2,H()*0.71);
   ctx.restore();
 
   const allDone=GS.done.size===5;
   const bW=u(0.52),bH=u(0.092),bX=(W()-bW)/2,bY=H()*0.8;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,500,400);
   const clicked=drawButton('zback',bX,bY,bW,bH,
-    allDone?'🏆  VOIR LE RÉSULTAT FINAL':'🗺  RETOUR À LA CARTE',
+    allDone?U.seeFinal:U.backMap,
     {grad:[z.color,z.accent],glow:z.accent,color:'#04121b'});
   ctx.restore();
   if(clicked){
@@ -1533,7 +2071,7 @@ function drawGameover(t){
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.shadowColor='#FFB300'; ctx.shadowBlur=u(0.03)+u(0.01)*Math.sin(t/400);
   try{ctx.letterSpacing=u(0.004)+'px';}catch(e){}
-  etext('EXPÉDITION TERMINÉE !',W()/2,H()*0.225);
+  etext(U.complete,W()/2,H()*0.225);
   try{ctx.letterSpacing='0px';}catch(e){} ctx.shadowBlur=0;
   ctx.restore();
 
@@ -1541,8 +2079,8 @@ function drawGameover(t){
   ctx.save(); ctx.globalAlpha*=fadeIn(age,300,500);
   ctx.font=`${u(0.038)}px sans-serif`; ctx.fillStyle='#80DEEA';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  etext(`Score final : ⭐ ${shown} / ${MAX_SCORE}  (${Math.round(shown/MAX_SCORE*100)} %)`,W()/2,H()*0.31);
-  const rank=pct===100?'🥇 Légende de la finance':pct>=80?'🥈 Analyste confirmé':pct>=60?'🥉 Apprenti investisseur':'📊 Observateur des marchés';
+  etext(tpl(U.finalScore,{s:shown,m:MAX_SCORE,p:Math.round(shown/MAX_SCORE*100)}),W()/2,H()*0.31);
+  const rank=pct===100?U.rankLegend:pct>=80?U.rankAnalyst:pct>=60?U.rankAssociate:U.rankObserver;
   ctx.font=`bold ${u(0.042)}px sans-serif`; ctx.fillStyle='#E0F7FA';
   etext(rank,W()/2,H()*0.385);
   ctx.restore();
@@ -1566,7 +2104,7 @@ function drawGameover(t){
 
   const bW=u(0.48),bH=u(0.092),bX=(W()-bW)/2,bY=H()*0.88;
   ctx.save(); ctx.globalAlpha*=fadeIn(age,900,400);
-  const clicked=drawButton('again',bX,bY,bW,bH,'🔄  REJOUER',
+  const clicked=drawButton('again',bX,bY,bW,bH,U.playAgain,
     {grad:['#00E5FF','#FFB300'],glow:'#00E5FF',color:'#04121b'});
   ctx.restore();
   if(clicked){ resetGame(); goto('intro',{color:'#00ACC1'}); }
@@ -1614,6 +2152,7 @@ function updateTimers(ts,dt){
 let lastTs=0;
 function loop(ts){
   const dt=Math.min(ts-lastTs||16,100); lastTs=ts; dtGlobal=dt; TNOW=ts;
+  U = (I18N[LANG]||I18N.en).ui;          // active language bundle for this frame
   if(GS.screenT0===0) GS.screenT0=ts;
 
   // updates
@@ -1664,6 +2203,22 @@ function loop(ts){
   CLICK=null;                       // consume click
   requestAnimationFrame(loop);
 }
+
+// ── Language dropdown (top-right) ─────────────────────────────
+(function initLang(){
+  if(typeof document==='undefined' || typeof document.createElement!=='function') return;
+  const sel=document.getElementById('lang');
+  if(!sel || !sel.appendChild) return;
+  LANGS.forEach(l=>{ const o=document.createElement('option'); o.value=l.code; o.textContent=l.label; sel.appendChild(o); });
+  sel.value=LANG;
+  sel.addEventListener('change',()=>{
+    LANG=sel.value;
+    try{ localStorage.setItem('amundi_lang',LANG); }catch(e){}
+    buildZones();                   // rebuild zone content in the new language
+    SFX.ensure(); SFX.startAmbient();
+  });
+})();
+
 requestAnimationFrame(loop);
 </script>
 </body>
