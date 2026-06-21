@@ -1476,12 +1476,24 @@ function rr(x,y,w,h,r){
   ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
 }
 function wrap(str,maxW){
-  const words=str.split(' '), lines=[]; let line='';
-  words.forEach(w=>{
-    const test=line?line+' '+w:w;
-    if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; }
+  str=''+str;
+  // CJK has no spaces → allow breaking between CJK chars, keep Latin words whole.
+  const isCJK=ch=>/[　-〿぀-ヿ㐀-䶿一-鿿豈-﫿＀-￯]/.test(ch);
+  const units=[]; let buf='', sp=false;
+  const flush=()=>{ if(buf){ units.push({s:buf,sp}); buf=''; sp=false; } };
+  for(const ch of str){
+    if(ch===' '){ flush(); sp=true; }
+    else if(isCJK(ch)){ flush(); units.push({s:ch,sp}); sp=false; }
+    else buf+=ch;
+  }
+  flush();
+  const lines=[]; let line='';
+  for(const un of units){
+    const sep=(line && un.sp)?' ':'';
+    const test=line+sep+un.s;
+    if(line && ctx.measureText(test).width>maxW){ lines.push(line); line=un.s; }
     else line=test;
-  });
+  }
   if(line) lines.push(line);
   return lines;
 }
@@ -1774,8 +1786,14 @@ function drawFact(t){
   ctx.font=`${u(0.05)}px sans-serif`; ctx.fillStyle='#fff';
   ctx.textAlign='center'; ctx.textBaseline='top';
   etext('💡',W()/2,cY+u(0.022));
-  ctx.font=`${u(0.03)}px sans-serif`; ctx.fillStyle='#CFD8DC';
-  drawCentered(z.facts[GS.factIdx],W()/2,cY+u(0.07),cW-u(0.08),u(0.044));
+  // fact body — shrink + re-wrap so dense (e.g. CJK) text never clips
+  ctx.fillStyle='#CFD8DC';
+  const fTxt=z.facts[GS.factIdx], fMaxW=cW-u(0.08), fAvailH=cH-u(0.095);
+  let fFs=u(0.03), fLh=u(0.044);
+  ctx.font=`${fFs}px sans-serif`; let fLines=wrap(fTxt,fMaxW);
+  while(fLines.length*fLh>fAvailH && fFs>u(0.02)){ fFs-=1; fLh=Math.round(fFs*1.45); ctx.font=`${fFs}px sans-serif`; fLines=wrap(fTxt,fMaxW); }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  fLines.forEach((ln,i)=>etext(ln,W()/2,cY+u(0.07)+i*fLh));
   ctx.restore();
 
   // progress dots (active pulses)
