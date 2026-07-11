@@ -5,20 +5,22 @@ import Image from "next/image";
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowDown, ArrowUpRight, Sparkles } from "lucide-react";
 
-import { siteConfig, rotatingTitles, heroStats } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/motion/magnetic";
 import { AnimatedCounter } from "@/components/motion/animated-counter";
 
 export function Hero() {
+  const { siteConfig, hero } = useDictionary();
   const [titleIndex, setTitleIndex] = useState(0);
 
   useEffect(() => {
+    setTitleIndex(0);
     const interval = setInterval(() => {
-      setTitleIndex((prev) => (prev + 1) % rotatingTitles.length);
+      setTitleIndex((prev) => (prev + 1) % hero.rotatingTitles.length);
     }, 2800);
     return () => clearInterval(interval);
-  }, []);
+  }, [hero.rotatingTitles.length]);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -94,7 +96,7 @@ export function Hero() {
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 className="font-display text-2xl font-medium text-gradient sm:text-3xl"
               >
-                {rotatingTitles[titleIndex]}
+                {hero.rotatingTitles[titleIndex]}
               </motion.p>
             </AnimatePresence>
           </div>
@@ -116,13 +118,13 @@ export function Hero() {
           >
             <Magnetic>
               <Button size="lg" variant="gradient" onClick={() => scrollTo("#projects")}>
-                View my work
+                {hero.ctaWork}
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
             </Magnetic>
             <Magnetic>
               <Button size="lg" variant="outline" onClick={() => scrollTo("#contact")}>
-                Get in touch
+                {hero.ctaContact}
               </Button>
             </Magnetic>
           </motion.div>
@@ -133,7 +135,7 @@ export function Hero() {
             transition={{ duration: 0.7, delay: 0.45 }}
             className="mt-14 grid grid-cols-2 gap-6 sm:grid-cols-4"
           >
-            {heroStats.map((stat) => (
+            {hero.stats.map((stat) => (
               <div key={stat.label}>
                 <div className="font-display text-2xl font-semibold sm:text-3xl">
                   <AnimatedCounter value={stat.value} suffix={stat.suffix} />
@@ -175,8 +177,10 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="glass absolute -left-8 bottom-8 rounded-2xl border border-border px-4 py-3 shadow-lg animate-float"
           >
-            <div className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">Currently</div>
-            <div className="text-sm font-medium">AI Genius @ Amundi</div>
+            <div className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+              {hero.currentlyLabel}
+            </div>
+            <div className="text-sm font-medium">{hero.currentlyValue}</div>
           </motion.div>
 
           <motion.div
@@ -185,7 +189,9 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 1 }}
             className="glass absolute -right-6 top-10 rounded-2xl border border-border px-4 py-3 shadow-lg animate-float-slow"
           >
-            <div className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">Based in</div>
+            <div className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+              {hero.basedInLabel}
+            </div>
             <div className="text-sm font-medium">{siteConfig.location}</div>
           </motion.div>
         </motion.div>
@@ -193,7 +199,7 @@ export function Hero() {
 
       <motion.button
         onClick={() => scrollTo("#about")}
-        aria-label="Scroll to about section"
+        aria-label={hero.scrollAria}
         animate={{ y: [0, 8, 0] }}
         transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full border border-border p-2 text-muted-foreground transition-colors hover:text-foreground"

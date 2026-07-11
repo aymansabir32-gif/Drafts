@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Loader2, Mail, MapPin, Phone, XCircle } from "lucide-react";
 
-import { contactFormSchema, type ContactFormValues } from "@/lib/validations/contact";
+import { createContactFormSchema, type ContactFormValues } from "@/lib/validations/contact";
 import { submitContactForm } from "@/app/actions/contact";
-import { siteConfig } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 export function Contact() {
+  const { siteConfig, contact } = useDictionary();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const schema = useMemo(() => createContactFormSchema(contact.validation), [contact.validation]);
 
   const {
     register,
@@ -25,14 +28,14 @@ export function Contact() {
     reset,
     formState: { errors },
   } = useForm<ContactFormValues>({
-    resolver: zodResolver(contactFormSchema),
+    resolver: zodResolver(schema),
   });
 
   function onSubmit(values: ContactFormValues) {
     setStatus(null);
     startTransition(async () => {
       const result = await submitContactForm(values);
-      setStatus({ type: result.success ? "success" : "error", message: result.message });
+      setStatus({ type: result.success ? "success" : "error", message: contact.status[result.code] });
       if (result.success) reset();
     });
   }
@@ -43,14 +46,11 @@ export function Contact() {
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
             <Reveal>
-              <span className="font-mono text-xs uppercase tracking-wide text-electric">Get in touch</span>
+              <span className="font-mono text-xs uppercase tracking-wide text-electric">{contact.kicker}</span>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                Let&apos;s build something with AI
+                {contact.heading}
               </h2>
-              <p className="mt-4 max-w-md text-muted-foreground">
-                Open to full-time Marketing & AI roles from December 2026, and happy to talk consulting,
-                collaboration or a quick question in the meantime.
-              </p>
+              <p className="mt-4 max-w-md text-muted-foreground">{contact.subheading}</p>
             </Reveal>
 
             <Reveal delay={0.15}>
@@ -91,29 +91,29 @@ export function Contact() {
             >
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="Jane Doe" {...register("name")} />
+                  <Label htmlFor="name">{contact.form.nameLabel}</Label>
+                  <Input id="name" placeholder={contact.form.namePlaceholder} {...register("name")} />
                   {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="jane@company.com" {...register("email")} />
+                  <Label htmlFor="email">{contact.form.emailLabel}</Label>
+                  <Input id="email" type="email" placeholder={contact.form.emailPlaceholder} {...register("email")} />
                   {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="company">Company (optional)</Label>
-                  <Input id="company" placeholder="Company name" {...register("company")} />
+                  <Label htmlFor="company">{contact.form.companyLabel}</Label>
+                  <Input id="company" placeholder={contact.form.companyPlaceholder} {...register("company")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input id="subject" placeholder="Let's collaborate" {...register("subject")} />
+                  <Label htmlFor="subject">{contact.form.subjectLabel}</Label>
+                  <Input id="subject" placeholder={contact.form.subjectPlaceholder} {...register("subject")} />
                   {errors.subject && <p className="text-xs text-red-500">{errors.subject.message}</p>}
                 </div>
               </div>
 
               <div className="mt-5 space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="Tell me a bit about what you have in mind..." {...register("message")} />
+                <Label htmlFor="message">{contact.form.messageLabel}</Label>
+                <Textarea id="message" placeholder={contact.form.messagePlaceholder} {...register("message")} />
                 {errors.message && <p className="text-xs text-red-500">{errors.message.message}</p>}
               </div>
 
@@ -141,10 +141,10 @@ export function Contact() {
                 <Button type="submit" variant="gradient" size="lg" disabled={isPending} className="ml-auto">
                   {isPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Sending...
+                      <Loader2 className="h-4 w-4 animate-spin" /> {contact.form.submitting}
                     </>
                   ) : (
-                    "Send message"
+                    contact.form.submit
                   )}
                 </Button>
               </div>

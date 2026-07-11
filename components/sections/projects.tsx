@@ -4,30 +4,29 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Target, Lightbulb, TrendingUp } from "lucide-react";
 
-import { projects, type Project } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
+import type { Project } from "@/lib/i18n/types";
 import { Reveal, RevealGroup, revealItem } from "@/components/motion/reveal";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export function Projects() {
+  const { projects } = useDictionary();
   const [selected, setSelected] = useState<Project | null>(null);
 
   return (
     <section id="projects" className="relative py-28">
       <div className="mx-auto max-w-6xl px-6">
         <Reveal>
-          <span className="font-mono text-xs uppercase tracking-wide text-electric">Selected work</span>
+          <span className="font-mono text-xs uppercase tracking-wide text-electric">{projects.kicker}</span>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Featured projects & case studies
+            {projects.heading}
           </h2>
-          <p className="mt-3 max-w-xl text-muted-foreground">
-            Real initiatives from AI adoption at Amundi and commercial growth work before it — each one built to
-            solve a specific business problem.
-          </p>
+          <p className="mt-3 max-w-xl text-muted-foreground">{projects.subheading}</p>
         </Reveal>
 
         <RevealGroup className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2">
-          {projects.map((project) => (
+          {projects.items.map((project) => (
             <motion.button
               key={project.title}
               variants={revealItem}
@@ -50,7 +49,7 @@ export function Projects() {
                 ))}
               </div>
               <div className="mt-5 flex items-center gap-1 text-sm font-medium text-electric opacity-0 transition-opacity group-hover:opacity-100">
-                View case study <ArrowRight className="h-3.5 w-3.5" />
+                {projects.viewCaseStudy} <ArrowRight className="h-3.5 w-3.5" />
               </div>
             </motion.button>
           ))}
@@ -77,21 +76,21 @@ export function Projects() {
                 <div className="flex gap-3">
                   <Target className="mt-0.5 h-5 w-5 shrink-0 text-electric" />
                   <div>
-                    <div className="text-sm font-semibold">Challenge</div>
+                    <div className="text-sm font-semibold">{projects.challengeLabel}</div>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{selected.challenge}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-violet" />
                   <div>
-                    <div className="text-sm font-semibold">Solution</div>
+                    <div className="text-sm font-semibold">{projects.solutionLabel}</div>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{selected.solution}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />
                   <div>
-                    <div className="text-sm font-semibold">Business impact</div>
+                    <div className="text-sm font-semibold">{projects.impactLabel}</div>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{selected.impact}</p>
                   </div>
                 </div>

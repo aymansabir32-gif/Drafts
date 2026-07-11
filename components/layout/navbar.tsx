@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
-import { navLinks, siteConfig } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CommandMenuTrigger } from "@/components/layout/command-menu";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
+  const { siteConfig, nav } = useDictionary();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -54,7 +56,7 @@ export function Navbar() {
         </a>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
+          {nav.links.map((link) => (
             <button
               key={link.href}
               onClick={() => handleNavClick(link.href)}
@@ -67,6 +69,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <CommandMenuTrigger />
+          <LanguageSwitcher className="hidden sm:flex" />
           <ThemeToggle />
           <Button
             size="sm"
@@ -74,7 +77,7 @@ export function Navbar() {
             className="hidden md:inline-flex"
             onClick={() => handleNavClick("#contact")}
           >
-            Let&apos;s talk
+            {nav.talkCta}
           </Button>
           <button
             type="button"
@@ -93,7 +96,7 @@ export function Navbar() {
           animate={{ opacity: 1, y: 0 }}
           className="glass absolute inset-x-4 top-16 flex flex-col gap-1 rounded-2xl border border-border p-3 md:hidden"
         >
-          {navLinks.map((link) => (
+          {nav.links.map((link) => (
             <button
               key={link.href}
               onClick={() => handleNavClick(link.href)}
@@ -102,8 +105,9 @@ export function Navbar() {
               {link.label}
             </button>
           ))}
+          <LanguageSwitcher className="mt-1 w-fit sm:hidden" />
           <Button variant="gradient" className="mt-1" onClick={() => handleNavClick("#contact")}>
-            Let&apos;s talk
+            {nav.talkCta}
           </Button>
         </motion.div>
       )}

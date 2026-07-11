@@ -3,17 +3,19 @@
 import { motion } from "framer-motion";
 import { GraduationCap, Award, Languages as LanguagesIcon } from "lucide-react";
 
-import { education, certifications, languages } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { Reveal, RevealGroup, revealItem } from "@/components/motion/reveal";
 
 export function Education() {
+  const { education } = useDictionary();
+
   return (
     <section id="education" className="relative py-28">
       <div className="mx-auto max-w-6xl px-6">
         <Reveal>
-          <span className="font-mono text-xs uppercase tracking-wide text-electric">Foundations</span>
+          <span className="font-mono text-xs uppercase tracking-wide text-electric">{education.kicker}</span>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Education, certifications & languages
+            {education.heading}
           </h2>
         </Reveal>
 
@@ -21,11 +23,11 @@ export function Education() {
           <div>
             <Reveal>
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <GraduationCap className="h-4 w-4 text-electric" /> Education
+                <GraduationCap className="h-4 w-4 text-electric" /> {education.educationLabel}
               </div>
             </Reveal>
             <div className="relative mt-6 space-y-6 border-l border-border pl-6">
-              {education.map((item, index) => (
+              {education.items.map((item, index) => (
                 <Reveal key={item.school} delay={index * 0.1}>
                   <div className="relative">
                     <span className="absolute -left-[29px] top-1.5 h-3 w-3 rounded-full border-2 border-background bg-electric" />
@@ -42,11 +44,11 @@ export function Education() {
 
             <Reveal delay={0.2}>
               <div className="mt-12 flex items-center gap-2 text-sm font-semibold">
-                <Award className="h-4 w-4 text-electric" /> Certifications
+                <Award className="h-4 w-4 text-electric" /> {education.certificationsLabel}
               </div>
             </Reveal>
             <RevealGroup className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {certifications.map((cert) => (
+              {education.certifications.map((cert) => (
                 <motion.div
                   key={cert.title}
                   variants={revealItem}
@@ -64,11 +66,11 @@ export function Education() {
           <div>
             <Reveal>
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <LanguagesIcon className="h-4 w-4 text-electric" /> Languages
+                <LanguagesIcon className="h-4 w-4 text-electric" /> {education.languagesLabel}
               </div>
             </Reveal>
             <div className="mt-6 space-y-5">
-              {languages.map((lang, index) => (
+              {education.languages.map((lang, index) => (
                 <Reveal key={lang.name} delay={index * 0.08}>
                   <div>
                     <div className="flex items-baseline justify-between">
@@ -92,12 +94,9 @@ export function Education() {
             <Reveal delay={0.3}>
               <div className="mt-12 rounded-2xl border border-border bg-surface p-6">
                 <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
-                  Research focus
+                  {education.researchFocusLabel}
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  My M.Sc thesis examines user adoption of generative AI inside a strictly-regulated financial
-                  services organization — the same question I work on daily at Amundi, studied formally.
-                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{education.researchFocusText}</p>
               </div>
             </Reveal>
           </div>

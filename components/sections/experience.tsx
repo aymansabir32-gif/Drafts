@@ -4,32 +4,30 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, MapPin } from "lucide-react";
 
-import { experiences } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { Reveal } from "@/components/motion/reveal";
 import { Badge } from "@/components/ui/badge";
 
 export function Experience() {
+  const { experience } = useDictionary();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
     <section id="experience" className="relative py-28">
       <div className="mx-auto max-w-4xl px-6">
         <Reveal>
-          <span className="font-mono text-xs uppercase tracking-wide text-electric">Career</span>
+          <span className="font-mono text-xs uppercase tracking-wide text-electric">{experience.kicker}</span>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Professional experience
+            {experience.heading}
           </h2>
-          <p className="mt-3 max-w-xl text-muted-foreground">
-            From AI adoption inside a regulated enterprise to hands-on B2B growth — four roles, one throughline:
-            making new systems work for the people who use them.
-          </p>
+          <p className="mt-3 max-w-xl text-muted-foreground">{experience.subheading}</p>
         </Reveal>
 
         <div className="relative mt-16">
           <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border sm:left-[19px]" />
 
           <div className="space-y-4">
-            {experiences.map((exp, index) => {
+            {experience.items.map((exp, index) => {
               const isOpen = openIndex === index;
               return (
                 <Reveal key={exp.company} delay={index * 0.06}>
@@ -55,7 +53,7 @@ export function Experience() {
                             <h3 className="font-display text-lg font-semibold">{exp.role}</h3>
                             {exp.current && (
                               <Badge variant="cyan" className="uppercase">
-                                Current
+                                {experience.currentBadge}
                               </Badge>
                             )}
                           </div>

@@ -1,9 +1,13 @@
+"use client";
+
 import { Mail, ArrowUpRight } from "lucide-react";
 
-import { siteConfig, navLinks } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { LinkedinIcon } from "@/components/icons/linkedin-icon";
 
 export function Footer() {
+  const { siteConfig, nav, footer } = useDictionary();
+
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-16 md:flex-row md:items-start md:justify-between">
@@ -35,9 +39,11 @@ export function Footer() {
 
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
           <div>
-            <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Sections</div>
+            <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+              {footer.sectionsLabel}
+            </div>
             <ul className="mt-4 space-y-2.5">
-              {navLinks.map((link) => (
+              {nav.links.map((link) => (
                 <li key={link.href}>
                   <a href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                     {link.label}
@@ -47,7 +53,9 @@ export function Footer() {
             </ul>
           </div>
           <div>
-            <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Elsewhere</div>
+            <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+              {footer.elsewhereLabel}
+            </div>
             <ul className="mt-4 space-y-2.5">
               <li>
                 <a
@@ -56,7 +64,7 @@ export function Footer() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  LinkedIn <ArrowUpRight className="h-3 w-3" />
+                  {footer.linkedinLink} <ArrowUpRight className="h-3 w-3" />
                 </a>
               </li>
               <li>
@@ -66,13 +74,15 @@ export function Footer() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  Legacy portfolio <ArrowUpRight className="h-3 w-3" />
+                  {footer.legacyPortfolioLink} <ArrowUpRight className="h-3 w-3" />
                 </a>
               </li>
             </ul>
           </div>
           <div>
-            <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">Contact</div>
+            <div className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+              {footer.contactLabel}
+            </div>
             <ul className="mt-4 space-y-2.5">
               <li className="text-sm text-muted-foreground">{siteConfig.email}</li>
               <li className="text-sm text-muted-foreground">{siteConfig.location}</li>
@@ -81,8 +91,10 @@ export function Footer() {
         </div>
       </div>
       <div className="mx-auto flex max-w-6xl flex-col-reverse items-center gap-3 border-t border-border px-6 py-6 text-xs text-muted-foreground md:flex-row md:justify-between">
-        <span>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</span>
-        <span className="font-mono">Built with Next.js, Tailwind CSS & Framer Motion</span>
+        <span>
+          © {new Date().getFullYear()} {siteConfig.name}. {footer.rights}
+        </span>
+        <span className="font-mono">{footer.builtWith}</span>
       </div>
     </footer>
   );

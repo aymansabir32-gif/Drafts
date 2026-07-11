@@ -2,10 +2,12 @@
 
 import { motion } from "framer-motion";
 
-import { about } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { Reveal, RevealGroup, revealItem } from "@/components/motion/reveal";
 
 export function About() {
+  const { about } = useDictionary();
+
   return (
     <section id="about" className="relative py-28">
       <div className="mx-auto max-w-6xl px-6">

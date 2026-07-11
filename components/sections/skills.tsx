@@ -3,31 +3,29 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 
-import { skillCategories } from "@/lib/data";
+import { useDictionary } from "@/contexts/locale-context";
 import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 
 export function Skills() {
+  const { skills } = useDictionary();
   const [activeCategory, setActiveCategory] = useState(0);
-  const category = skillCategories[activeCategory];
+  const category = skills.categories[activeCategory];
 
   return (
     <section id="skills" className="relative py-28">
       <div className="mx-auto max-w-6xl px-6">
         <Reveal>
-          <span className="font-mono text-xs uppercase tracking-wide text-electric">Capabilities</span>
+          <span className="font-mono text-xs uppercase tracking-wide text-electric">{skills.kicker}</span>
           <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Skills, organized like a toolkit
+            {skills.heading}
           </h2>
-          <p className="mt-3 max-w-xl text-muted-foreground">
-            Five clusters that cover the full loop — from AI experimentation to marketing execution to the
-            business case that justifies it.
-          </p>
+          <p className="mt-3 max-w-xl text-muted-foreground">{skills.subheading}</p>
         </Reveal>
 
         <Reveal delay={0.1}>
           <div className="mt-10 flex flex-wrap gap-2">
-            {skillCategories.map((cat, index) => (
+            {skills.categories.map((cat, index) => (
               <button
                 key={cat.title}
                 onClick={() => setActiveCategory(index)}
