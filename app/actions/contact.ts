@@ -31,39 +31,40 @@ export async function submitContactForm(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );
 
-  if (!resendApiKey && !hasSupabase) {
+  if (!resendApiKey) {
     return { success: false, code: "notConfigured" };
   }
 
   let emailDelivered = false;
-  let storageSucceeded = false;
 
-  if (resendApiKey) {
-    try {
-      const resend = new Resend(resendApiKey);
-      const toEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL;
-      const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+  try {
+    const resend = new Resend(resendApiKey);
+    const toEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_TO_EMAIL;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
 
-      const { error } = await resend.emails.send({
-        from: fromEmail,
-        to: toEmail,
-        replyTo: email,
-        subject: `New portfolio message: ${subject}`,
-        text: [
-          `Name: ${name}`,
-          `Email: ${email}`,
-          company ? `Company: ${company}` : null,
-          "",
-          message,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      });
+    const { error } = await resend.emails.send({
+      from: fromEmail,
+      to: toEmail,
+      replyTo: email,
+      subject: `New portfolio message: ${subject}`,
+      text: [
+        `Name: ${name}`,
+        `Email: ${email}`,
+        company ? `Company: ${company}` : null,
+        "",
+        message,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    });
 
-      emailDelivered = !error;
-    } catch {
-      emailDelivered = false;
+    if (error) {
+      console.error("Resend failed to send contact email:", error);
     }
+    emailDelivered = !error;
+  } catch (err) {
+    console.error("Resend threw while sending contact email:", err);
+    emailDelivered = false;
   }
 
   if (hasSupabase) {
@@ -76,13 +77,15 @@ export async function submitContactForm(
         subject,
         message,
       });
-      storageSucceeded = !error;
-    } catch {
-      storageSucceeded = false;
+      if (error) {
+        console.error("Supabase failed to store contact submission:", error);
+      }
+    } catch (err) {
+      console.error("Supabase threw while storing contact submission:", err);
     }
   }
 
-  if (emailDelivered || storageSucceeded) {
+  if (emailDelivered) {
     return { success: true, code: "success" };
   }
 
