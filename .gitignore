@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+/vite.config.js
+/vite.config.d.ts
+/tailwind.config.js
+/tailwind.config.d.ts
+.DS_Store
+npm-debug.log*
+.vscode/*
+!.vscode/extensions.json
